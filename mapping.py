@@ -1,170 +1,125 @@
-from unicodedata import normalize
+import unicodedata
 from enum import Enum, auto
-from sys import argv, exit
 
 class LetterModification(Enum):
-    MOD_NONE = auto()
-    MOD_BREVE = auto()
-    MOD_CIRCUMFLEX = auto()
-    MOD_HORN = auto()
-    MOD_STROKE = auto()
+    MOD_NONE       = 0
+    MOD_BREVE      = "\u0306"
+    MOD_CIRCUMFLEX = "\u0302"
+    MOD_HORN       = "\u031b"
+    MOD_STROKE     = "\uffff"
 
 class ToneMark(Enum):
-    TONE_UNMARKED = auto()
-    TONE_GRAVE = auto()
-    TONE_ACUTE = auto()
-    TONE_HOOK_ABOVE = auto()
-    TONE_TILDE = auto()
-    TONE_UNDERDOT = auto()
+    TONE_UNMARKED   = 0
+    TONE_GRAVE      = "\u0300"
+    TONE_ACUTE      = "\u0301"
+    TONE_HOOK_ABOVE = "\u0309"
+    TONE_TILDE      = "\u0303"
+    TONE_UNDERDOT   = "\u0323"
+
+MAX_MOD_LEN = max(len(mod.name) for mod in LetterModification)
+MAX_TONE_LEN = max(len(tone.name) for tone in ToneMark)
 
 class CharMapping:
-    def __init__(self, unicode, base, tone: ToneMark, mod: LetterModification):
-        self.unicode = unicode
+    def __init__(self, base, mod, tone):
         self.base = base
-        self.tone = tone
         self.mod = mod
+        self.tone = tone
 
-    def pack(self):
-        return ord(self.base) | (self.tone.value << 8) | (self.mod.value << 12)
+def extract_mappings(letters):
+    mappings = {}
 
-    def __repr__(self):
-        return (
-            f"CharMapping(unicode='{self.unicode}', base='{self.base}', "
-            f"tone={self.tone.name}, mod={self.mod.name})"
-        )
+    for letter in letters:
+        for variant in (letter.lower(), letter.upper()):
+            base = variant
+            mod = LetterModification.MOD_NONE
+            tone = ToneMark.TONE_UNMARKED
 
-LETTER_MODIFICATION_MAP = {
-    "\u0306": LetterModification.MOD_BREVE,
-    "\u0302": LetterModification.MOD_CIRCUMFLEX,
-    "\u031b": LetterModification.MOD_HORN,
-}
+            if letter == "đ":
+                base = "d" if variant.islower() else "D"
+                mod = LetterModification.MOD_STROKE
+            else:
+                decomposed = unicodedata.normalize("NFD", variant)
+                base = decomposed[0]
 
-TONE_MARK_MAP = {
-    "\u0300": ToneMark.TONE_GRAVE,
-    "\u0301": ToneMark.TONE_ACUTE,
-    "\u0309": ToneMark.TONE_HOOK_ABOVE,
-    "\u0303": ToneMark.TONE_TILDE,
-    "\u0323": ToneMark.TONE_UNDERDOT,
-}
+                for mark in decomposed[1:]:
+                    if mark in LetterModification:
+                        mod = LetterModification(mark)
+                    elif mark in ToneMark:
+                        tone = ToneMark(mark)
 
-
-VIETNAMESE_CHARS = (
-    "ÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ"
-    "àáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ"
-)
-
-def extract_mappings():
-    mappings = []
-
-    for char in VIETNAMESE_CHARS:
-        base = char
-        tone = ToneMark.TONE_UNMARKED
-        mod = LetterModification.MOD_NONE
-
-        if char.lower() == 'đ':
-            base = 'd' if char.islower() else 'D'
-            mod = LetterModification.MOD_STROKE
-        else:
-            decomposed = normalize("NFD", char)
-            base = decomposed[0]
-
-            for mark in decomposed[1:]:
-                if mark in TONE_MARK_MAP:
-                    tone = TONE_MARK_MAP[mark]
-                elif mark in LETTER_MODIFICATION_MAP:
-                    mod = LETTER_MODIFICATION_MAP[mark]
-
-        mappings.append(CharMapping(char, base, tone, mod))
+            mappings[variant] = CharMapping(base, mod, tone)
 
     return mappings
 
 def generate_switch_cases(mappings, indent=""):
-    max_base_len = max(len(mapping.base) for mapping in mappings)
-    max_tone_len = max(len(mapping.tone.name) for mapping in mappings)
-    max_mod_len = max(len(mapping.mod.name + ":") for mapping in mappings)
-
-    for mapping in mappings:
-        base_padded = mapping.base.ljust(max_base_len)
-        tone_padded = mapping.tone.name.ljust(max_tone_len)
-        mod_padded = (mapping.mod.name + ":").ljust(max_mod_len)
+    for letter, mapping in mappings.items():
         print(
-            f"{indent}case '{base_padded}' | {tone_padded} | {mod_padded} "
-            f"return \"{mapping.unicode}\";"
+            f"{indent}case '{mapping.base}' | "
+            f"{mapping.mod.name.ljust(MAX_MOD_LEN)} | "
+            f"{(mapping.tone.name + ":").ljust(MAX_TONE_LEN + 1)} "
+            f"return \"{letter}\";"
         )
 
-def generate_keystroke_defines(mappings, trigger_map, define_func="", indent=""):
-    for trigger, cond in trigger_map.items():
-        if isinstance(cond, LetterModification):
-            condition = lambda mapping: mapping.mod == cond
-        elif isinstance(cond, ToneMark):
-            condition = lambda mapping: mapping.tone == cond
-        elif callable(cond):
-            condition = cond
-        else:
-            continue
+def generate_keystroke_defines(method, define_func="", indent=""):
+    for letter, conversion in method.items():
+        if not isinstance(conversion, dict):
+            conversion = { "": conversion }
 
-        filtered = [mapping for mapping in mappings if condition(mapping)]
-        if not filtered:
-            continue
-
-        max_base_len = max(len(mapping.base) for mapping in filtered)
-        max_tone_len = max(len(mapping.tone.name) for mapping in filtered)
-
-        combinations = [
-            f"'{mapping.base.ljust(max_base_len)}' | "
-            f"{mapping.tone.name.ljust(max_tone_len)} | "
-            f"{mapping.mod.name}"
-            for mapping in filtered
+        conversion_str = [
+            (f"'{base}' | " if base else "") + mark.name
+            for base, mark in conversion.items()
         ]
 
-        define_str = f"{indent}{define_func}('{trigger}', "
-        combination_str = f",\n{' ' * len(define_str)}".join(combinations)
-        print(f"{define_str}{combination_str}),")
+        for trigger in (letter.lower(), letter.upper()):
+            define_str = f"{indent}{define_func}('{trigger}', "
+            joined_str = f",\n{' ' * len(define_str)}".join(conversion_str)
+            print(f"{define_str}{joined_str}),")
 
+LETTERS = "àáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ"
 
 TELEX = {
-    "a": lambda m: m.base.lower() == "a" and m.mod == LetterModification.MOD_CIRCUMFLEX,
-    "d": lambda m: m.base.lower() == "d" and m.mod == LetterModification.MOD_STROKE,
-    "e": lambda m: m.base.lower() == "e" and m.mod == LetterModification.MOD_CIRCUMFLEX,
     "f": ToneMark.TONE_GRAVE,
-    "j": ToneMark.TONE_UNDERDOT,
-    "o": lambda m: m.base.lower() == "o" and m.mod == LetterModification.MOD_CIRCUMFLEX,
-    "r": ToneMark.TONE_HOOK_ABOVE,
     "s": ToneMark.TONE_ACUTE,
-    "w": lambda m: (m.base.lower() in "ou" and m.mod == LetterModification.MOD_HORN)
-        or (m.base.lower() == 'a' and m.mod == LetterModification.MOD_BREVE),
+    "r": ToneMark.TONE_HOOK_ABOVE,
     "x": ToneMark.TONE_TILDE,
+    "j": ToneMark.TONE_UNDERDOT,
+    "a": { "a": LetterModification.MOD_CIRCUMFLEX },
+    "d": { "d": LetterModification.MOD_STROKE },
+    "e": { "e": LetterModification.MOD_CIRCUMFLEX },
+    "o": { "o": LetterModification.MOD_CIRCUMFLEX },
+    "w": {
+        "a": LetterModification.MOD_BREVE,
+        "o": LetterModification.MOD_HORN,
+        "u": LetterModification.MOD_HORN,
+    },
 }
 
 if __name__ == "__main__":
+    from sys import argv, exit
+
     if len(argv) < 2:
-        print("usage: python mapping.py <compose|method>")
+        print("Usage: python mapping.py <compose|method>")
         exit(1)
 
-    cmd = argv[1]
-    indent =  " " * 4
+    indent = " " * 4
 
-    all_mappings = extract_mappings()
-    all_mappings.sort(key=lambda x: x.pack())
+    match argv[1]:
+        case "compose":
+            mappings = extract_mappings(LETTERS)
+            generate_switch_cases(mappings, indent)
+        case "method":
+            if len(argv) < 3:
+                print("Please enter method name")
+                exit(1)
 
-    if cmd == "compose":
-        generate_switch_cases(all_mappings, indent)
-    elif cmd == "method":
-        if len(argv) < 3:
-            print("please enter method name")
+            match argv[2]:
+                case "telex": method = TELEX
+                case _:
+                    print("Unknown method")
+                    exit(1)
+
+            define_func = argv[3] if len(argv) > 3 else "KEYSTROKE_DEFINE"
+            generate_keystroke_defines(method, define_func, indent)
+        case _:
+            print("Unknown command")
             exit(1)
-
-        method = None
-        func = "KEYSTROKE_DEFINE"
-
-        name = argv[2]
-        if name == "telex":
-            method = TELEX
-        else:
-            print("unknown method")
-            exit(1)
-
-        generate_keystroke_defines(all_mappings, method, func, indent)
-    else:
-        print("unknown command")
-        exit(1)
