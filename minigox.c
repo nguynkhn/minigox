@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <windows.h>
 
-char buf = 0;
+bool backspace_sent = false;
+int buf = 0;
 struct Method method = {0};
 
 void send_unicode(char *unicode) {
@@ -36,6 +37,7 @@ void send_unicode(char *unicode) {
 		},
 	};
 
+	backspace_sent = true;
 	SendInput(ARRAYSIZE(input), input, sizeof(INPUT));
 }
 
@@ -44,24 +46,42 @@ bool process_key(char key) {
 		struct Keystroke keystroke = method.keystrokes[i];
 
 		if (key == keystroke.trigger) {
-			int *combination = keystroke.combinations;
+			int *conversion = keystroke.conversions;
 
-			while (*combination > 0) {
-				char ch = *combination;
-				if (buf == ch) {
-					char *unicode = compose_char(*combination);
-					send_unicode(unicode);
-					return true;
+			while (*conversion != 0) {
+				char base = BASE_CHAR(*conversion);
+				if (base == 0 || BASE_CHAR(buf) == base) {
+					enum LetterModification mod = LETTER_MODIFICATION(*conversion);
+					enum ToneMark tone = TONE_MARK(*conversion);
+
+					if (mod != MOD_NONE) {
+						buf &= ~(0xF << 12);
+						buf |= mod;
+					}
+					if (tone != TONE_UNMARKED) {
+						buf &= ~(0xF << 8);
+						buf |= tone;
+					}
+
+					char *unicode = compose_char(buf);
+					if (unicode != NULL) {
+						send_unicode(unicode);
+						return true;
+					}
 				}
 
-				++combination;
+				++conversion;
 			}
 
 			break;
 		}
 	}
 
-	buf = key;
+	if (backspace_sent) {
+		!backspace_sent;
+	} else {
+		buf = key;
+	}
 	return false;
 }
 

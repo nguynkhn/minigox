@@ -17,9 +17,9 @@ enum ToneMark {
 	TONE_UNDERDOT   = 5 << 8,
 };
 
-#define BASE_LETTER(_c) (_c & 0xFF)
-#define LETTER_MODIFICATION(_c) ((_c >> 8) & 0xF)
-#define TONE_MARK(_c) ((_c >> 12) & 0xF)
+#define BASE_CHAR(_c) (_c & 0xFF)
+#define LETTER_MODIFICATION(_c) (_c & 0xF000)
+#define TONE_MARK(_c) (_c & 0x0F00)
 
 struct Keystroke {
 	char trigger;
