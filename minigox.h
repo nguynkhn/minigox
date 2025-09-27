@@ -30,7 +30,7 @@ struct Method {
 #define KEYSTROKE_DEFINE(_t, ...) { _t, (int []){ __VA_ARGS__, 0 } }
 static struct Keystroke TELEX[] = {
 	/* generated with mapping.py */
-	KEYSTROKE_DEFINE('a', 'A' | TONE_UNMARKED   | MOD_CIRCUMFLEX,
+    KEYSTROKE_DEFINE('a', 'A' | TONE_UNMARKED   | MOD_CIRCUMFLEX,
                           'a' | TONE_UNMARKED   | MOD_CIRCUMFLEX,
                           'A' | TONE_GRAVE      | MOD_CIRCUMFLEX,
                           'a' | TONE_GRAVE      | MOD_CIRCUMFLEX,
@@ -80,11 +80,13 @@ static struct Keystroke TELEX[] = {
                           'U' | TONE_GRAVE | MOD_HORN,
                           'o' | TONE_GRAVE | MOD_HORN,
                           'u' | TONE_GRAVE | MOD_HORN),
-    KEYSTROKE_DEFINE('j', 'E' | TONE_UNDERDOT | MOD_NONE,
+    KEYSTROKE_DEFINE('j', 'A' | TONE_UNDERDOT | MOD_NONE,
+                          'E' | TONE_UNDERDOT | MOD_NONE,
                           'I' | TONE_UNDERDOT | MOD_NONE,
                           'O' | TONE_UNDERDOT | MOD_NONE,
                           'U' | TONE_UNDERDOT | MOD_NONE,
                           'Y' | TONE_UNDERDOT | MOD_NONE,
+                          'a' | TONE_UNDERDOT | MOD_NONE,
                           'e' | TONE_UNDERDOT | MOD_NONE,
                           'i' | TONE_UNDERDOT | MOD_NONE,
                           'o' | TONE_UNDERDOT | MOD_NONE,
@@ -227,7 +229,7 @@ static struct Keystroke TELEX[] = {
 char *compose_char(int combination) {
 	switch (combination) {
 	/* generated with mapping.py */
-	case 'A' | TONE_GRAVE      | MOD_NONE:       return "À";
+    case 'A' | TONE_GRAVE      | MOD_NONE:       return "À";
     case 'E' | TONE_GRAVE      | MOD_NONE:       return "È";
     case 'I' | TONE_GRAVE      | MOD_NONE:       return "Ì";
     case 'O' | TONE_GRAVE      | MOD_NONE:       return "Ò";
@@ -275,11 +277,13 @@ char *compose_char(int combination) {
     case 'o' | TONE_TILDE      | MOD_NONE:       return "õ";
     case 'u' | TONE_TILDE      | MOD_NONE:       return "ũ";
     case 'y' | TONE_TILDE      | MOD_NONE:       return "ỹ";
+    case 'A' | TONE_UNDERDOT   | MOD_NONE:       return "Ạ";
     case 'E' | TONE_UNDERDOT   | MOD_NONE:       return "Ẹ";
     case 'I' | TONE_UNDERDOT   | MOD_NONE:       return "Ị";
     case 'O' | TONE_UNDERDOT   | MOD_NONE:       return "Ọ";
     case 'U' | TONE_UNDERDOT   | MOD_NONE:       return "Ụ";
     case 'Y' | TONE_UNDERDOT   | MOD_NONE:       return "Ỵ";
+    case 'a' | TONE_UNDERDOT   | MOD_NONE:       return "ạ";
     case 'e' | TONE_UNDERDOT   | MOD_NONE:       return "ẹ";
     case 'i' | TONE_UNDERDOT   | MOD_NONE:       return "ị";
     case 'o' | TONE_UNDERDOT   | MOD_NONE:       return "ọ";
