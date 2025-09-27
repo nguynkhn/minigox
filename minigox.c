@@ -78,7 +78,7 @@ bool process_key(char key) {
 	}
 
 	if (backspace_sent) {
-		!backspace_sent;
+		backspace_sent = false;
 	} else {
 		buf = key;
 	}
