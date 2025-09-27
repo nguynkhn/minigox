@@ -25,29 +25,28 @@ class CharMapping:
         self.mod = mod
         self.tone = tone
 
-def extract_mappings(letters):
+def extract_mappings(charsets):
     mappings = {}
 
-    for letter in letters:
-        for variant in (letter.lower(), letter.upper()):
-            base = variant
-            mod = LetterModification.MOD_NONE
-            tone = ToneMark.TONE_UNMARKED
+    for char in charsets:
+        base = char
+        mod = LetterModification.MOD_NONE
+        tone = ToneMark.TONE_UNMARKED
 
-            if letter == "đ":
-                base = "d" if variant.islower() else "D"
-                mod = LetterModification.MOD_STROKE
-            else:
-                decomposed = unicodedata.normalize("NFD", variant)
-                base = decomposed[0]
+        if char == "đ":
+            base = "d"
+            mod = LetterModification.MOD_STROKE
+        else:
+            decomposed = unicodedata.normalize("NFD", char)
+            base = decomposed[0]
 
-                for mark in decomposed[1:]:
-                    if mark in LetterModification:
-                        mod = LetterModification(mark)
-                    elif mark in ToneMark:
-                        tone = ToneMark(mark)
+            for mark in decomposed[1:]:
+                if mark in LetterModification:
+                    mod = LetterModification(mark)
+                elif mark in ToneMark:
+                    tone = ToneMark(mark)
 
-            mappings[variant] = CharMapping(base, mod, tone)
+        mappings[char] = CharMapping(base, mod, tone)
 
     return mappings
 
@@ -61,7 +60,7 @@ def generate_switch_cases(mappings, indent=""):
         )
 
 def generate_keystroke_defines(method, define_func="", indent=""):
-    for letter, conversion in method.items():
+    for trigger, conversion in method.items():
         if not isinstance(conversion, dict):
             conversion = { "": conversion }
 
@@ -70,12 +69,11 @@ def generate_keystroke_defines(method, define_func="", indent=""):
             for base, mark in conversion.items()
         ]
 
-        for trigger in (letter.lower(), letter.upper()):
-            define_str = f"{indent}{define_func}('{trigger}', "
-            joined_str = f",\n{' ' * len(define_str)}".join(conversion_str)
-            print(f"{define_str}{joined_str}),")
+        define_str = f"{indent}{define_func}('{trigger}', "
+        joined_str = f",\n{' ' * len(define_str)}".join(conversion_str)
+        print(f"{define_str}{joined_str}),")
 
-LETTERS = "àáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ"
+CHARSETS = "àáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ"
 
 TELEX = {
     "f": ToneMark.TONE_GRAVE,
@@ -105,7 +103,7 @@ if __name__ == "__main__":
 
     match argv[1]:
         case "compose":
-            mappings = extract_mappings(LETTERS)
+            mappings = extract_mappings(CHARSETS)
             generate_switch_cases(mappings, indent)
         case "method":
             if len(argv) < 3:
