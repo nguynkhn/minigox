@@ -1,5 +1,6 @@
 from unicodedata import normalize
 from enum import Enum, auto
+from sys import argv, exit
 
 class LetterModification(Enum):
     MOD_NONE = auto()
@@ -91,8 +92,79 @@ def generate_switch_cases(mappings, indent=""):
             f"return \"{mapping.unicode}\";"
         )
 
+def generate_keystroke_defines(mappings, trigger_map, define_func="", indent=""):
+    for trigger, cond in trigger_map.items():
+        if isinstance(cond, LetterModification):
+            condition = lambda mapping: mapping.mod == cond
+        elif isinstance(cond, ToneMark):
+            condition = lambda mapping: mapping.tone == cond
+        elif callable(cond):
+            condition = cond
+        else:
+            continue
+
+        filtered = [mapping for mapping in mappings if condition(mapping)]
+        if not filtered:
+            continue
+
+        max_base_len = max(len(mapping.base) for mapping in filtered)
+        max_tone_len = max(len(mapping.tone.name) for mapping in filtered)
+
+        combinations = [
+            f"'{mapping.base.ljust(max_base_len)}' | "
+            f"{mapping.tone.name.ljust(max_tone_len)} | "
+            f"{mapping.mod.name}"
+            for mapping in filtered
+        ]
+
+        define_str = f"{indent}{define_func}('{trigger}', "
+        combination_str = f",\n{' ' * len(define_str)}".join(combinations)
+        print(f"{define_str}{combination_str}),")
+
+
+TELEX = {
+    "a": lambda m: m.base.lower() == "a" and m.mod == LetterModification.MOD_CIRCUMFLEX,
+    "d": lambda m: m.base.lower() == "d" and m.mod == LetterModification.MOD_STROKE,
+    "e": lambda m: m.base.lower() == "e" and m.mod == LetterModification.MOD_CIRCUMFLEX,
+    "f": ToneMark.TONE_GRAVE,
+    "j": ToneMark.TONE_UNDERDOT,
+    "o": lambda m: m.base.lower() == "o" and m.mod == LetterModification.MOD_CIRCUMFLEX,
+    "r": ToneMark.TONE_HOOK_ABOVE,
+    "s": ToneMark.TONE_ACUTE,
+    "w": lambda m: (m.base.lower() in "ou" and m.mod == LetterModification.MOD_HORN)
+        or (m.base.lower() == 'a' and m.mod == LetterModification.MOD_BREVE),
+    "x": ToneMark.TONE_TILDE,
+}
+
 if __name__ == "__main__":
+    if len(argv) < 2:
+        print("usage: python mapping.py <compose|method>")
+        exit(1)
+
+    cmd = argv[1]
+    indent =  " " * 4
+
     all_mappings = extract_mappings()
     all_mappings.sort(key=lambda x: x.pack())
 
-    generate_switch_cases(all_mappings, " " * 4)
+    if cmd == "compose":
+        generate_switch_cases(all_mappings, indent)
+    elif cmd == "method":
+        if len(argv) < 3:
+            print("please enter method name")
+            exit(1)
+
+        method = None
+        func = "KEYSTROKE_DEFINE"
+
+        name = argv[2]
+        if name == "telex":
+            method = TELEX
+        else:
+            print("unknown method")
+            exit(1)
+
+        generate_keystroke_defines(all_mappings, method, func, indent)
+    else:
+        print("unknown command")
+        exit(1)
