@@ -1,92 +1,43 @@
 #ifndef _WIN32
-#error "this program is Windows-only"
+#error "This program is Windows-only"
 #else
-	
+
 #include "minigox.h"
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
+
 #include <windows.h>
 
-bool backspace_sent = false;
-int buf = 0;
+#define ARRAY_LEN(_a) (sizeof(_a) / sizeof(_a[0]))
+
+struct CharInfo curr = {0};
 struct Method method = {0};
 
-void send_unicode(char *unicode) {
-	wchar_t ch = 0;
-	MultiByteToWideChar(CP_UTF8, 0, unicode, -1, &ch, 1);
-
-	INPUT input[4] = {
-		/* send backspace */
-		{
-			.type = INPUT_KEYBOARD,
-			.ki = { .wVk = VK_BACK, .dwFlags = 0 },
-		},
-		{
-			.type = INPUT_KEYBOARD,
-			.ki = { .wVk = VK_BACK, .dwFlags = KEYEVENTF_KEYUP },
-		},
-		/* send unicode */
-		{
-			.type = INPUT_KEYBOARD,
-			.ki = { .wVk = 0, .wScan = ch, .dwFlags = KEYEVENTF_UNICODE },
-		},
-		{
-			.type = INPUT_KEYBOARD,
-			.ki = { .wVk = 0, .wScan = ch, .dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP },
-		},
-	};
-
-	backspace_sent = true;
-	SendInput(ARRAYSIZE(input), input, sizeof(INPUT));
-}
+bool ignore_sent = false;
+LONG mouse_x, mouse_y;
+INPUT input[6] = {
+    {
+        .type = INPUT_KEYBOARD,
+        .ki = { .wVk = VK_BACK, .dwFlags = 0 },
+    },
+    {
+        .type = INPUT_KEYBOARD,
+        .ki = { .wVk = VK_BACK, .dwFlags = KEYEVENTF_KEYUP },
+    },
+};
 
 bool process_key(char key) {
-	for (int i = 0; i < method.len; ++i) {
-		struct Keystroke keystroke = method.keystrokes[i];
-
-		if (key == keystroke.trigger) {
-			int *conversion = keystroke.conversions;
-
-			while (*conversion != 0) {
-				char base = BASE_CHAR(*conversion);
-				if (base == 0 || BASE_CHAR(buf) == base) {
-					enum LetterModification mod = LETTER_MODIFICATION(*conversion);
-					enum ToneMark tone = TONE_MARK(*conversion);
-
-					if (mod != MOD_NONE) {
-						buf &= ~(0xF << 12);
-						buf |= mod;
-					}
-					if (tone != TONE_UNMARKED) {
-						buf &= ~(0xF << 8);
-						buf |= tone;
-					}
-
-					char *unicode = compose_char(buf);
-					if (unicode != NULL) {
-						send_unicode(unicode);
-						return true;
-					}
-				}
-
-				++conversion;
-			}
-
-			break;
-		}
-	}
-
-	if (backspace_sent) {
-		backspace_sent = false;
-	} else {
-		buf = key;
-	}
-	return false;
+    /* TODO */
+    return true;
 }
 
 LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
-	if (ncode == HC_ACTION && (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN)) {
+	if (
+        ncode == HC_ACTION
+        && (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN)
+    ) {
 		PKBDLLHOOKSTRUCT kbd = (PKBDLLHOOKSTRUCT)lparam;
 		BYTE keyboard_state[256];
 		WCHAR buffer[16] = {0};
@@ -122,14 +73,47 @@ LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
 	return CallNextHookEx(NULL, ncode, wparam, lparam);
 }
 
-int main(int argc, char *argv[]) {
-	// TODO: CLI
-	method.len = ARRAYSIZE(TELEX);
-	method.keystrokes = TELEX;
+LRESULT CALLBACK mouse_proc(int ncode, WPARAM wparam, LPARAM lparam) {
+    if (ncode == HC_ACTION) {
+        PMSLLHOOKSTRUCT mouse = (PMSLLHOOKSTRUCT)lparam;
 
-	HHOOK keyboard_hook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_proc, NULL, 0);
-	if (keyboard_hook == NULL) {
-		fprintf(stderr, "failed to install hook!\n");
+        switch (wparam) {
+        case WM_LBUTTONDOWN:
+        case WM_RBUTTONDOWN:
+            if (mouse->pt.x != mouse_x && mouse->pt.y != mouse_y)
+                curr = minigox_unpack_char(0);
+
+            break;
+        case WM_LBUTTONUP:
+        case WM_RBUTTONUP:
+            mouse_x = mouse->pt.x;
+            mouse_y = mouse->pt.y;
+            break;
+        }
+    }
+	return CallNextHookEx(NULL, ncode, wparam, lparam);
+}
+
+int main(int argc, char *argv[]) {
+    method.keystroke_num = ARRAY_LEN(TELEX);
+    method.keystrokes = TELEX;
+
+    if (argc > 1) {
+        char *name = argv[1];
+
+        if (strcmp(name, "vni") == 0) {
+            method.keystroke_num = ARRAY_LEN(VNI);
+            method.keystrokes == VNI;
+        } else if (strcmp(name, "telex") != 0) {
+            fprintf(stderr, "Unknown method name\n");
+            return 1;
+        }
+    }
+
+    HHOOK kbd_hook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_proc, NULL, 0);
+    HHOOK mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, mouse_proc, NULL, 0);
+	if (kbd_hook == NULL || mouse_proc == NULL) {
+		fprintf(stderr, "Failed to install hook\n");
 		return 1;
 	}
 
@@ -139,8 +123,9 @@ int main(int argc, char *argv[]) {
 		DispatchMessage(&msg);
 	}
 
-	UnhookWindowsHookEx(keyboard_hook);
-	return 0;
+	UnhookWindowsHookEx(kbd_hook);
+	UnhookWindowsHookEx(mouse_hook);
+    return 0;
 }
 
 #endif // _WIN32
