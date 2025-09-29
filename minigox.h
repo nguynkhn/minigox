@@ -1,6 +1,7 @@
 #ifndef MINIGOX_H
 #define MINIGOX_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -21,9 +22,16 @@ enum LetterModification {
     MOD_STROKE     = 4 << 12,
 };
 
-#define MARK_RESET 0xFFFF
+#define MARK_RESET (TONE_UNMARKED | MOD_NONE)
 
 typedef uint16_t pchar_t;
+
+#define is_vowel(_c) ( \
+    _c == 'A' || _c == 'E' || _c == 'I' || \
+    _c == 'O' || _c == 'U' || _c == 'Y' || \
+    _c == 'a' || _c == 'e' || _c == 'i' || \
+    _c == 'o' || _c == 'u' || _c == 'y')
+#define is_modifiable(_c) (is_vowel(_c) || _c == 'd' || _c == 'D')
 
 #define BASE_MASK 0x00FF
 #define TONE_MASK 0x0F00
@@ -231,5 +239,66 @@ static struct Keystroke VNI[] = {
     KEYSTROKE_DEFINE('9', MOD_STROKE),
     KEYSTROKE_DEFINE('0', MARK_RESET),
 };
+
+enum ApplyResult {
+    APPLY_OK = 0,
+    APPLY_REVERTED,
+    APPLY_UNCHANGED,
+};
+
+/*
+ * dest is modifiable, ch is in keystroke => apply to dest
+ * dest is modifiable, ch is in keystroke but dest already have it
+ * => revert dest + failed
+ * dest is modifiable, ch is not in keystroke => failed
+ */
+enum ApplyResult minigox_apply_method(
+    struct Method method,
+    struct CharInfo *dest,
+    char ch
+) {
+    for (int i = 0; i < method.keystroke_num; ++i) {
+        struct Keystroke keystroke = method.keystrokes[i];
+
+        if (keystroke.trigger == ch) {
+            pchar_t *conv = keystroke.conversions;
+
+            while (*conv != NO_CONV) {
+                struct CharInfo conv_info = minigox_unpack_char(*conv);
+
+                if (conv_info.base != '\0' && conv_info.base != dest->base) {
+                    ++conv;
+                    continue;
+                }
+
+                /* TODO: MARK_RESET */
+
+                if (conv_info.tone != TONE_UNMARKED) {
+                    if (conv_info.tone == dest->tone) {
+                        dest->tone = TONE_UNMARKED;
+                        return APPLY_REVERTED;
+                    }
+
+                    dest->tone = conv_info.tone;
+                }
+
+                if (conv_info.mod != MOD_NONE) {
+                    if (conv_info.mod == dest->mod) {
+                        dest->mod = MOD_NONE;
+                        return APPLY_REVERTED;
+                    }
+
+                    dest->mod = conv_info.mod;
+                }
+
+                return APPLY_OK;
+            }
+
+            break;
+        }
+    }
+
+    return APPLY_UNCHANGED;
+}
 
 #endif // MINIGOX_H

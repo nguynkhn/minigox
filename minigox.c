@@ -15,7 +15,7 @@
 struct CharInfo curr = {0};
 struct Method method = {0};
 
-bool ignore_sent = false;
+int ignore_sent = 0;
 LONG mouse_x, mouse_y;
 INPUT input[6] = {
     {
@@ -29,7 +29,11 @@ INPUT input[6] = {
 };
 
 bool process_key(char key) {
-    /* TODO */
+	if (ignore_sent > 0) {
+		--ignore_sent;
+		return false;
+	}
+
     return true;
 }
 
