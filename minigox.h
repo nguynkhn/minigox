@@ -246,12 +246,6 @@ enum ApplyResult {
     APPLY_UNCHANGED,
 };
 
-/*
- * dest is modifiable, ch is in keystroke => apply to dest
- * dest is modifiable, ch is in keystroke but dest already have it
- * => revert dest + failed
- * dest is modifiable, ch is not in keystroke => failed
- */
 enum ApplyResult minigox_apply_method(
     struct Method method,
     struct CharInfo *dest,
@@ -280,9 +274,7 @@ enum ApplyResult minigox_apply_method(
                     }
 
                     dest->tone = conv_info.tone;
-                }
-
-                if (conv_info.mod != MOD_NONE) {
+                } else if (conv_info.mod != MOD_NONE) {
                     if (conv_info.mod == dest->mod) {
                         dest->mod = MOD_NONE;
                         return APPLY_REVERTED;
