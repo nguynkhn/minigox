@@ -86,8 +86,6 @@ skip:
     return false;
 }
 
-static void reset_current(void) {}
-
 LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
 	if (
         ncode == HC_ACTION
