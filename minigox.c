@@ -12,12 +12,12 @@
 
 #define ARRAY_LEN(_a) (sizeof(_a) / sizeof(_a[0]))
 
-struct CharInfo curr = {0};
-struct Method method = {0};
+static struct CharInfo curr = {0};
+static struct Method method = {0};
 
-int ignore_sent = 0;
-LONG mouse_x, mouse_y;
-INPUT input[6] = {
+static bool ignore_sent = false;
+static LONG mouse_x, mouse_y;
+static INPUT input[6] = {
     {
         .type = INPUT_KEYBOARD,
         .ki = { .wVk = VK_BACK, .dwFlags = 0 },
@@ -28,14 +28,65 @@ INPUT input[6] = {
     },
 };
 
-bool process_key(char key) {
-	if (ignore_sent > 0) {
-		--ignore_sent;
+static bool process_key(char key) {
+	if (ignore_sent) {
+		ignore_sent = false;
 		return false;
 	}
 
-    return true;
+	enum ApplyResult result = minigox_apply_method(method, &curr, key);
+	if (result == APPLY_UNCHANGED)
+		goto skip;
+
+	wchar_t ch = curr.base;
+	char *unicode = minigox_compose_char(curr);
+	if (unicode != NULL) {
+		MultiByteToWideChar(CP_UTF8, 0, unicode, -1, &ch, 1);
+	} else {
+		goto skip;
+	}
+
+	int count = 2;
+
+	ignore_sent = true;
+	input[count++] = (INPUT){
+		.type = INPUT_KEYBOARD,
+		.ki = { .wVk = 0, .wScan = ch, .dwFlags = KEYEVENTF_UNICODE },
+	};
+	input[count++] = (INPUT){
+		.type = INPUT_KEYBOARD,
+		.ki = {
+			.wVk = 0,
+			.wScan = ch,
+			.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+		},
+	};
+
+	if (result == APPLY_REVERTED) {
+		input[count++] = (INPUT){
+			.type = INPUT_KEYBOARD,
+			.ki = { .wVk = 0, .wScan = key, .dwFlags = KEYEVENTF_UNICODE },
+		};
+		input[count++] = (INPUT){
+			.type = INPUT_KEYBOARD,
+			.ki = {
+				.wVk = 0,
+				.wScan = key,
+				.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+			},
+		};
+		curr = minigox_unpack_char(key);
+	}
+
+	SendInput(count, input, sizeof(INPUT));
+	return true;
+
+skip:
+	curr = minigox_unpack_char(key);
+    return false;
 }
+
+static void reset_current(void) {}
 
 LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
 	if (
@@ -43,34 +94,44 @@ LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
         && (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN)
     ) {
 		PKBDLLHOOKSTRUCT kbd = (PKBDLLHOOKSTRUCT)lparam;
-		BYTE keyboard_state[256];
-		WCHAR buffer[16] = {0};
+		int vkCode = kbd->vkCode;
 
-		if (GetKeyboardState(keyboard_state)) {
-			if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
-				keyboard_state[VK_SHIFT] |= 0x80;
-			if (GetAsyncKeyState(VK_CONTROL) & 0x8000)
-				keyboard_state[VK_CONTROL] |= 0x80;
-			if (GetAsyncKeyState(VK_MENU) & 0x8000)
-				keyboard_state[VK_MENU] |= 0x80;
-			if (GetKeyState(VK_CAPITAL) & 0x0001)
-				keyboard_state[VK_CAPITAL] |= 0x01;
-			if (GetKeyState(VK_NUMLOCK) & 0x0001)
-				keyboard_state[VK_NUMLOCK] |= 0x01;
-			if (GetKeyState(VK_SCROLL) & 0x0001)
-				keyboard_state[VK_SCROLL] |= 0x01;
+		if (
+			vkCode != VK_DELETE && vkCode != VK_RETURN
+			&& vkCode != VK_HOME && vkCode != VK_END
+			&& vkCode != VK_PRIOR && vkCode != VK_NEXT
+			&& vkCode != VK_LEFT && vkCode != VK_RIGHT
+			&& vkCode != VK_UP && vkCode != VK_RIGHT
+		) {
+			BYTE keyboard_state[256];
+			WCHAR buffer[16] = {0};
 
-			if (ToUnicode(
-				kbd->vkCode,
-				kbd->scanCode,
-				keyboard_state,
-				buffer,
-				ARRAYSIZE(buffer) - 1,
-				0
-			) == 1) {
-				if (process_key(buffer[0]))
+			if (GetKeyboardState(keyboard_state)) {
+				if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
+					keyboard_state[VK_SHIFT] |= 0x80;
+				if (GetAsyncKeyState(VK_CONTROL) & 0x8000)
+					keyboard_state[VK_CONTROL] |= 0x80;
+				if (GetAsyncKeyState(VK_MENU) & 0x8000)
+					keyboard_state[VK_MENU] |= 0x80;
+				if (GetKeyState(VK_CAPITAL) & 0x0001)
+					keyboard_state[VK_CAPITAL] |= 0x01;
+				if (GetKeyState(VK_NUMLOCK) & 0x0001)
+					keyboard_state[VK_NUMLOCK] |= 0x01;
+				if (GetKeyState(VK_SCROLL) & 0x0001)
+					keyboard_state[VK_SCROLL] |= 0x01;
+
+				if (ToUnicode(
+					vkCode,
+					kbd->scanCode,
+					keyboard_state,
+					buffer,
+					ARRAYSIZE(buffer) - 1,
+					0
+				) == 1 && process_key(buffer[0]))
 					return 1;
 			}
+		} else {
+            curr = minigox_unpack_char(0);
 		}
 	}
 

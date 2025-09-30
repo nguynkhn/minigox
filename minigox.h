@@ -1,6 +1,7 @@
 #ifndef MINIGOX_H
 #define MINIGOX_H
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -22,7 +23,7 @@ enum LetterModification {
     MOD_STROKE     = 4 << 12,
 };
 
-#define MARK_RESET (TONE_UNMARKED | MOD_NONE)
+#define MARK_RESET 0xFF00
 
 typedef uint16_t pchar_t;
 
@@ -56,6 +57,7 @@ char *minigox_compose_char(struct CharInfo info) {
 
     switch (ch) {
     /* generated with mapping.py */
+    case 'A' | TONE_UNMARKED   | MOD_NONE:       return "A";
     case 'A' | TONE_GRAVE      | MOD_NONE:       return "À";
     case 'A' | TONE_ACUTE      | MOD_NONE:       return "Á";
     case 'A' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ả";
@@ -74,6 +76,7 @@ char *minigox_compose_char(struct CharInfo info) {
     case 'A' | TONE_TILDE      | MOD_CIRCUMFLEX: return "Ẫ";
     case 'A' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: return "Ậ";
     case 'D' | TONE_UNMARKED   | MOD_STROKE:     return "Đ";
+    case 'E' | TONE_UNMARKED   | MOD_NONE:       return "E";
     case 'E' | TONE_GRAVE      | MOD_NONE:       return "È";
     case 'E' | TONE_ACUTE      | MOD_NONE:       return "É";
     case 'E' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ẻ";
@@ -85,11 +88,13 @@ char *minigox_compose_char(struct CharInfo info) {
     case 'E' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: return "Ể";
     case 'E' | TONE_TILDE      | MOD_CIRCUMFLEX: return "Ễ";
     case 'E' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: return "Ệ";
+    case 'I' | TONE_UNMARKED   | MOD_NONE:       return "I";
     case 'I' | TONE_GRAVE      | MOD_NONE:       return "Ì";
     case 'I' | TONE_ACUTE      | MOD_NONE:       return "Í";
     case 'I' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ỉ";
     case 'I' | TONE_TILDE      | MOD_NONE:       return "Ĩ";
     case 'I' | TONE_UNDERDOT   | MOD_NONE:       return "Ị";
+    case 'O' | TONE_UNMARKED   | MOD_NONE:       return "O";
     case 'O' | TONE_GRAVE      | MOD_NONE:       return "Ò";
     case 'O' | TONE_ACUTE      | MOD_NONE:       return "Ó";
     case 'O' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ỏ";
@@ -107,6 +112,7 @@ char *minigox_compose_char(struct CharInfo info) {
     case 'O' | TONE_HOOK_ABOVE | MOD_HORN:       return "Ở";
     case 'O' | TONE_TILDE      | MOD_HORN:       return "Ỡ";
     case 'O' | TONE_UNDERDOT   | MOD_HORN:       return "Ợ";
+    case 'U' | TONE_UNMARKED   | MOD_NONE:       return "U";
     case 'U' | TONE_GRAVE      | MOD_NONE:       return "Ù";
     case 'U' | TONE_ACUTE      | MOD_NONE:       return "Ú";
     case 'U' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ủ";
@@ -118,11 +124,13 @@ char *minigox_compose_char(struct CharInfo info) {
     case 'U' | TONE_HOOK_ABOVE | MOD_HORN:       return "Ử";
     case 'U' | TONE_TILDE      | MOD_HORN:       return "Ữ";
     case 'U' | TONE_UNDERDOT   | MOD_HORN:       return "Ự";
+    case 'Y' | TONE_UNMARKED   | MOD_NONE:       return "Y";
     case 'Y' | TONE_GRAVE      | MOD_NONE:       return "Ỳ";
     case 'Y' | TONE_ACUTE      | MOD_NONE:       return "Ý";
     case 'Y' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ỷ";
     case 'Y' | TONE_TILDE      | MOD_NONE:       return "Ỹ";
     case 'Y' | TONE_UNDERDOT   | MOD_NONE:       return "Ỵ";
+    case 'a' | TONE_UNMARKED   | MOD_NONE:       return "a";
     case 'a' | TONE_GRAVE      | MOD_NONE:       return "à";
     case 'a' | TONE_ACUTE      | MOD_NONE:       return "á";
     case 'a' | TONE_HOOK_ABOVE | MOD_NONE:       return "ả";
@@ -141,6 +149,7 @@ char *minigox_compose_char(struct CharInfo info) {
     case 'a' | TONE_TILDE      | MOD_CIRCUMFLEX: return "ẫ";
     case 'a' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: return "ậ";
     case 'd' | TONE_UNMARKED   | MOD_STROKE:     return "đ";
+    case 'e' | TONE_UNMARKED   | MOD_NONE:       return "e";
     case 'e' | TONE_GRAVE      | MOD_NONE:       return "è";
     case 'e' | TONE_ACUTE      | MOD_NONE:       return "é";
     case 'e' | TONE_HOOK_ABOVE | MOD_NONE:       return "ẻ";
@@ -152,11 +161,13 @@ char *minigox_compose_char(struct CharInfo info) {
     case 'e' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: return "ể";
     case 'e' | TONE_TILDE      | MOD_CIRCUMFLEX: return "ễ";
     case 'e' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: return "ệ";
+    case 'i' | TONE_UNMARKED   | MOD_NONE:       return "i";
     case 'i' | TONE_GRAVE      | MOD_NONE:       return "ì";
     case 'i' | TONE_ACUTE      | MOD_NONE:       return "í";
     case 'i' | TONE_HOOK_ABOVE | MOD_NONE:       return "ỉ";
     case 'i' | TONE_TILDE      | MOD_NONE:       return "ĩ";
     case 'i' | TONE_UNDERDOT   | MOD_NONE:       return "ị";
+    case 'o' | TONE_UNMARKED   | MOD_NONE:       return "o";
     case 'o' | TONE_GRAVE      | MOD_NONE:       return "ò";
     case 'o' | TONE_ACUTE      | MOD_NONE:       return "ó";
     case 'o' | TONE_HOOK_ABOVE | MOD_NONE:       return "ỏ";
@@ -174,6 +185,7 @@ char *minigox_compose_char(struct CharInfo info) {
     case 'o' | TONE_HOOK_ABOVE | MOD_HORN:       return "ở";
     case 'o' | TONE_TILDE      | MOD_HORN:       return "ỡ";
     case 'o' | TONE_UNDERDOT   | MOD_HORN:       return "ợ";
+    case 'u' | TONE_UNMARKED   | MOD_NONE:       return "u";
     case 'u' | TONE_GRAVE      | MOD_NONE:       return "ù";
     case 'u' | TONE_ACUTE      | MOD_NONE:       return "ú";
     case 'u' | TONE_HOOK_ABOVE | MOD_NONE:       return "ủ";
@@ -185,6 +197,7 @@ char *minigox_compose_char(struct CharInfo info) {
     case 'u' | TONE_HOOK_ABOVE | MOD_HORN:       return "ử";
     case 'u' | TONE_TILDE      | MOD_HORN:       return "ữ";
     case 'u' | TONE_UNDERDOT   | MOD_HORN:       return "ự";
+    case 'y' | TONE_UNMARKED   | MOD_NONE:       return "y";
     case 'y' | TONE_GRAVE      | MOD_NONE:       return "ỳ";
     case 'y' | TONE_ACUTE      | MOD_NONE:       return "ý";
     case 'y' | TONE_HOOK_ABOVE | MOD_NONE:       return "ỷ";
@@ -260,14 +273,18 @@ enum ApplyResult minigox_apply_method(
             while (*conv != NO_CONV) {
                 struct CharInfo conv_info = minigox_unpack_char(*conv);
 
-                if (conv_info.base != '\0' && conv_info.base != dest->base) {
+                if (
+                	conv_info.base != 0
+                	&& conv_info.base != tolower(dest->base)
+                ) {
                     ++conv;
                     continue;
                 }
 
-                /* TODO: MARK_RESET */
-
-                if (conv_info.tone != TONE_UNMARKED) {
+                if ((conv_info.tone | conv_info.mod) == MARK_RESET) {
+                	dest->tone = TONE_UNMARKED;
+                	dest->mod = MOD_NONE;
+                } else if (conv_info.tone != TONE_UNMARKED) {
                     if (conv_info.tone == dest->tone) {
                         dest->tone = TONE_UNMARKED;
                         return APPLY_REVERTED;
