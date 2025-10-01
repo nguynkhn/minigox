@@ -10,12 +10,9 @@
 
 #include <windows.h>
 
-#define ARRAY_LEN(_a) (sizeof(_a) / sizeof(_a[0]))
-
 static struct CharInfo curr = {0};
 static struct Method method = {0};
 
-static bool ignore_sent = false;
 static LONG mouse_x, mouse_y;
 static INPUT input[6] = {
     {
@@ -29,11 +26,6 @@ static INPUT input[6] = {
 };
 
 static bool process_key(char key) {
-	if (ignore_sent) {
-		ignore_sent = false;
-		return false;
-	}
-
 	enum ApplyResult result = minigox_apply_method(method, &curr, key);
 	if (result == APPLY_UNCHANGED)
 		goto skip;
@@ -48,7 +40,6 @@ static bool process_key(char key) {
 
 	int count = 2;
 
-	ignore_sent = true;
 	input[count++] = (INPUT){
 		.type = INPUT_KEYBOARD,
 		.ki = { .wVk = 0, .wScan = ch, .dwFlags = KEYEVENTF_UNICODE },
@@ -94,23 +85,28 @@ LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
 		PKBDLLHOOKSTRUCT kbd = (PKBDLLHOOKSTRUCT)lparam;
 		int vkCode = kbd->vkCode;
 
+		if (kbd->flags & LLKHF_INJECTED)
+			goto skip;
+
 		if (
 			vkCode != VK_DELETE && vkCode != VK_RETURN
 			&& vkCode != VK_HOME && vkCode != VK_END
 			&& vkCode != VK_PRIOR && vkCode != VK_NEXT
 			&& vkCode != VK_LEFT && vkCode != VK_RIGHT
-			&& vkCode != VK_UP && vkCode != VK_RIGHT
+			&& vkCode != VK_UP && vkCode != VK_DOWN
 		) {
 			BYTE keyboard_state[256];
 			WCHAR buffer[16] = {0};
 
 			if (GetKeyboardState(keyboard_state)) {
+				if (
+					GetAsyncKeyState(VK_CONTROL) & 0x8000
+					|| GetAsyncKeyState(VK_MENU) & 0x8000
+				)
+					goto skip;
+
 				if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
 					keyboard_state[VK_SHIFT] |= 0x80;
-				if (GetAsyncKeyState(VK_CONTROL) & 0x8000)
-					keyboard_state[VK_CONTROL] |= 0x80;
-				if (GetAsyncKeyState(VK_MENU) & 0x8000)
-					keyboard_state[VK_MENU] |= 0x80;
 				if (GetKeyState(VK_CAPITAL) & 0x0001)
 					keyboard_state[VK_CAPITAL] |= 0x01;
 				if (GetKeyState(VK_NUMLOCK) & 0x0001)
@@ -133,6 +129,7 @@ LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
 		}
 	}
 
+skip:
 	return CallNextHookEx(NULL, ncode, wparam, lparam);
 }
 
@@ -158,15 +155,15 @@ LRESULT CALLBACK mouse_proc(int ncode, WPARAM wparam, LPARAM lparam) {
 }
 
 int main(int argc, char *argv[]) {
-    method.keystroke_num = ARRAY_LEN(TELEX);
+    method.keystroke_num = ARRAYSIZE(TELEX);
     method.keystrokes = TELEX;
 
     if (argc > 1) {
         char *name = argv[1];
 
         if (strcmp(name, "vni") == 0) {
-            method.keystroke_num = ARRAY_LEN(VNI);
-            method.keystrokes == VNI;
+            method.keystroke_num = ARRAYSIZE(VNI);
+            method.keystrokes = VNI;
         } else if (strcmp(name, "telex") != 0) {
             fprintf(stderr, "Unknown method name\n");
             return 1;
@@ -175,7 +172,7 @@ int main(int argc, char *argv[]) {
 
     HHOOK kbd_hook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_proc, NULL, 0);
     HHOOK mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, mouse_proc, NULL, 0);
-	if (kbd_hook == NULL || mouse_proc == NULL) {
+	if (kbd_hook == NULL || mouse_hook == NULL) {
 		fprintf(stderr, "Failed to install hook\n");
 		return 1;
 	}

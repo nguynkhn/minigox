@@ -2,8 +2,8 @@
 
 ***A tiny Vietnamese input method editor written in C***
 
-Currently only Windows is supported, but plans for Linux (and possibly MacOS).
-are in the works
+Currently only Windows is supported, but plans for Linux (and possibly MacOS)
+are in the works.
 
 ## Usage
 

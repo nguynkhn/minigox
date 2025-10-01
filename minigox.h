@@ -266,7 +266,7 @@ enum ApplyResult minigox_apply_method(
     for (int i = 0; i < method.keystroke_num; ++i) {
         struct Keystroke keystroke = method.keystrokes[i];
 
-        if (keystroke.trigger == ch) {
+        if (keystroke.trigger == tolower(ch)) {
             pchar_t *conv = keystroke.conversions;
 
             while (*conv != NO_CONV) {
