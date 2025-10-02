@@ -4,16 +4,21 @@
 
 #include "minigox.h"
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <windows.h>
 
 static struct CharInfo curr = {0};
-static struct Method method = {0};
+static struct Method method = {
+    .keystroke_num = ARRAYSIZE(TELEX),
+    .keystrokes = TELEX,
+};
 
 static LONG mouse_x, mouse_y;
+static struct {
+    int ctrl, alt, shift, caps, num, scroll;
+} modifiers = {0};
 static INPUT input[6] = {
     {
         .type = INPUT_KEYBOARD,
@@ -25,112 +30,132 @@ static INPUT input[6] = {
     },
 };
 
-static bool process_key(char key) {
-	enum ApplyResult result = minigox_apply_method(method, &curr, key);
-	if (result == APPLY_UNCHANGED)
-		goto skip;
+static int process_key(char key) {
+    enum ApplyResult result = minigox_apply_method(&method, &curr, key);
+    if (result == APPLY_UNCHANGED)
+        goto skip;
 
-	wchar_t ch = curr.base;
-	char *unicode = minigox_compose_char(curr);
-	if (unicode != NULL) {
-		MultiByteToWideChar(CP_UTF8, 0, unicode, -1, &ch, 1);
-	} else {
-		goto skip;
-	}
+    wchar_t ch = curr.base;
+    char unicode[4] = {0};
+    if (minigox_compose_char(curr, unicode) == 0) {
+        MultiByteToWideChar(CP_UTF8, 0, unicode, -1, &ch, 1);
+    } else {
+        goto skip;
+    }
 
-	int count = 2;
+    int count = 2;
 
-	input[count++] = (INPUT){
-		.type = INPUT_KEYBOARD,
-		.ki = { .wVk = 0, .wScan = ch, .dwFlags = KEYEVENTF_UNICODE },
-	};
-	input[count++] = (INPUT){
-		.type = INPUT_KEYBOARD,
-		.ki = {
-			.wVk = 0,
-			.wScan = ch,
-			.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
-		},
-	};
+    input[count++] = (INPUT){
+        .type = INPUT_KEYBOARD,
+        .ki = { .wVk = 0, .wScan = ch, .dwFlags = KEYEVENTF_UNICODE },
+    };
+    input[count++] = (INPUT){
+        .type = INPUT_KEYBOARD,
+        .ki = {
+            .wVk = 0,
+            .wScan = ch,
+            .dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+        },
+    };
 
-	if (result == APPLY_REVERTED) {
-		input[count++] = (INPUT){
-			.type = INPUT_KEYBOARD,
-			.ki = { .wVk = 0, .wScan = key, .dwFlags = KEYEVENTF_UNICODE },
-		};
-		input[count++] = (INPUT){
-			.type = INPUT_KEYBOARD,
-			.ki = {
-				.wVk = 0,
-				.wScan = key,
-				.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
-			},
-		};
-		curr = minigox_unpack_char(key);
-	}
+    if (result == APPLY_REVERTED) {
+        input[count++] = (INPUT){
+            .type = INPUT_KEYBOARD,
+            .ki = { .wVk = 0, .wScan = key, .dwFlags = KEYEVENTF_UNICODE },
+        };
+        input[count++] = (INPUT){
+            .type = INPUT_KEYBOARD,
+            .ki = {
+                .wVk = 0,
+                .wScan = key,
+                .dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+            },
+        };
+        curr = minigox_unpack_char(key);
+    }
 
-	SendInput(count, input, sizeof(INPUT));
-	return true;
+    SendInput(count, input, sizeof(INPUT));
+    return 1;
 
 skip:
-	curr = minigox_unpack_char(key);
-    return false;
+    curr = minigox_unpack_char(key);
+    return 0;
+}
+
+static void update_modifiers(int key_down, int vkCode) {
+    switch (vkCode) {
+    case VK_LSHIFT:
+    case VK_RSHIFT:
+        modifiers.shift = key_down;
+        break;
+    case VK_LCONTROL:
+    case VK_RCONTROL:
+        modifiers.ctrl = key_down;
+        break;
+    case VK_LMENU:
+    case VK_RMENU:
+        modifiers.alt = key_down;
+        break;
+    case VK_CAPITAL:
+        if (key_down)
+            modifiers.caps = !modifiers.caps;
+        break;
+    case VK_NUMLOCK:
+        if (key_down)
+            modifiers.num = !modifiers.num;
+        break;
+    case VK_SCROLL:
+        if (key_down)
+            modifiers.scroll = !modifiers.scroll;
+        break;
+    }
 }
 
 LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
-	if (
-        ncode == HC_ACTION
-        && (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN)
-    ) {
-		PKBDLLHOOKSTRUCT kbd = (PKBDLLHOOKSTRUCT)lparam;
-		int vkCode = kbd->vkCode;
+    if (ncode == HC_ACTION) {
+        PKBDLLHOOKSTRUCT kbd = (PKBDLLHOOKSTRUCT)lparam;
+        DWORD vkCode = kbd->vkCode;
+        int key_down = (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN);
 
-		if (kbd->flags & LLKHF_INJECTED)
-			goto skip;
+        update_modifiers(key_down, vkCode);
 
-		if (
-			vkCode != VK_DELETE && vkCode != VK_RETURN
-			&& vkCode != VK_HOME && vkCode != VK_END
-			&& vkCode != VK_PRIOR && vkCode != VK_NEXT
-			&& vkCode != VK_LEFT && vkCode != VK_RIGHT
-			&& vkCode != VK_UP && vkCode != VK_DOWN
-		) {
-			BYTE keyboard_state[256];
-			WCHAR buffer[16] = {0};
+        if (!key_down || kbd->flags & LLKHF_INJECTED)
+            goto skip;
 
-			if (GetKeyboardState(keyboard_state)) {
-				if (
-					GetAsyncKeyState(VK_CONTROL) & 0x8000
-					|| GetAsyncKeyState(VK_MENU) & 0x8000
-				)
-					goto skip;
-
-				if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
-					keyboard_state[VK_SHIFT] |= 0x80;
-				if (GetKeyState(VK_CAPITAL) & 0x0001)
-					keyboard_state[VK_CAPITAL] |= 0x01;
-				if (GetKeyState(VK_NUMLOCK) & 0x0001)
-					keyboard_state[VK_NUMLOCK] |= 0x01;
-				if (GetKeyState(VK_SCROLL) & 0x0001)
-					keyboard_state[VK_SCROLL] |= 0x01;
-
-				if (ToUnicode(
-					vkCode,
-					kbd->scanCode,
-					keyboard_state,
-					buffer,
-					ARRAYSIZE(buffer) - 1,
-					0
-				) == 1 && process_key(buffer[0]))
-					return 1;
-			}
-		} else {
+        if (vkCode == VK_DELETE || vkCode == VK_RETURN
+            || vkCode == VK_HOME || vkCode == VK_END
+            || vkCode == VK_PRIOR || vkCode == VK_NEXT
+            || vkCode == VK_LEFT || vkCode == VK_RIGHT
+            || vkCode == VK_UP || vkCode == VK_DOWN
+            || modifiers.ctrl || modifiers.alt) {
             curr = minigox_unpack_char(0);
-		}
-	}
+            goto skip;
+        }
+
+        BYTE keyboard_state[256] = {0};
+        if (modifiers.shift)
+            keyboard_state[VK_SHIFT] |= 0x80;
+        if (modifiers.caps)
+            keyboard_state[VK_CAPITAL] |= 0x01;
+        if (modifiers.num)
+            keyboard_state[VK_NUMLOCK] |= 0x01;
+        if (modifiers.scroll)
+            keyboard_state[VK_SCROLL] |= 0x01;
+
+        WCHAR buffer[16] = {0};
+        if (ToUnicode(
+            vkCode,
+            kbd->scanCode,
+            keyboard_state,
+            buffer,
+            ARRAYSIZE(buffer) - 1,
+            0
+        ) == 1 && process_key(buffer[0]))
+            return 1;
+    }
 
 skip:
-	return CallNextHookEx(NULL, ncode, wparam, lparam);
+    return CallNextHookEx(NULL, ncode, wparam, lparam);
 }
 
 LRESULT CALLBACK mouse_proc(int ncode, WPARAM wparam, LPARAM lparam) {
@@ -151,13 +176,11 @@ LRESULT CALLBACK mouse_proc(int ncode, WPARAM wparam, LPARAM lparam) {
             break;
         }
     }
-	return CallNextHookEx(NULL, ncode, wparam, lparam);
+
+    return CallNextHookEx(NULL, ncode, wparam, lparam);
 }
 
 int main(int argc, char *argv[]) {
-    method.keystroke_num = ARRAYSIZE(TELEX);
-    method.keystrokes = TELEX;
-
     if (argc > 1) {
         char *name = argv[1];
 
@@ -172,19 +195,21 @@ int main(int argc, char *argv[]) {
 
     HHOOK kbd_hook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_proc, NULL, 0);
     HHOOK mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, mouse_proc, NULL, 0);
-	if (kbd_hook == NULL || mouse_hook == NULL) {
-		fprintf(stderr, "Failed to install hook\n");
-		return 1;
-	}
+    if (kbd_hook == NULL || mouse_hook == NULL) {
+        fprintf(stderr, "Failed to install hook\n");
+        return 1;
+    }
 
-	MSG msg;
-	while (GetMessage(&msg, NULL, 0, 0)) {
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
+    printf("minigox is ready\n");
 
-	UnhookWindowsHookEx(kbd_hook);
-	UnhookWindowsHookEx(mouse_hook);
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    UnhookWindowsHookEx(kbd_hook);
+    UnhookWindowsHookEx(mouse_hook);
     return 0;
 }
 

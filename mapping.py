@@ -8,6 +8,7 @@ class ToneMark(Enum):
     HOOK_ABOVE = "\u0309"
     TILDE      = "\u0303"
     UNDERDOT   = "\u0323"
+    RESET      = -1
 
     def enum_name(self):
         return f"TONE_{self.name}"
@@ -18,6 +19,7 @@ class LetterModification(Enum):
     CIRCUMFLEX = "\u0302"
     HORN       = "\u031b"
     STROKE     = "\uffff"
+    RESET      = -1
 
     def enum_name(self):
         return f"MOD_{self.name}"
@@ -56,28 +58,22 @@ def extract_mappings(charsets):
 
     return mappings
 
-def generate_switch_cases(mappings, indent=""):
+def generate_switch_cases(mappings, var_name="", indent=""):
     for letter, mapping in mappings.items():
         print(
             f"{indent}case '{mapping.base}' | "
             f"{mapping.tone.enum_name().ljust(MAX_TONE_LEN)} | "
             f"{(mapping.mod.enum_name() + ":").ljust(MAX_MOD_LEN + 1)} "
-            f"return \"{letter}\";"
+            f"{var_name} = \"{letter}\"; break;"
         )
 
-def generate_keystroke_defines(
-    method,
-    define_func="",
-    mark_reset="",
-    indent=""
-):
+def generate_keystroke_defines(method, define_func="", indent=""):
     for trigger, conversion in method.items():
         if not isinstance(conversion, dict):
             conversion = { "": conversion }
 
         conversion_str = [
             (f"'{base}' | " if base else "") + mark.enum_name()
-            if mark else mark_reset
             for base, mark in conversion.items()
         ]
 
@@ -85,13 +81,13 @@ def generate_keystroke_defines(
         joined_str = f",\n{' ' * len(define_str)}".join(conversion_str)
         print(f"{define_str}{joined_str}),")
 
-MARK_RESET = "MARK_RESET"
+VAR_NAME = "unicode"
 DEFINE_FUNC = "KEYSTROKE_DEFINE"
 INDENT = " " * 4
 
 CHARSETS = (
-    "AÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐEÈÉẺẼẸÊỀẾỂỄỆIÌÍỈĨỊOÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢUÙÚỦŨỤƯỪỨỬỮỰYỲÝỶỸỴ"
-    "aàáảãạăằắẳẵặâầấẩẫậđeèéẻẽẹêềếểễệiìíỉĩịoòóỏõọôồốổỗộơờớởỡợuùúủũụưừứửữựyỳýỷỹỵ"
+    "ÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐEÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ"
+    "àáảãạăằắẳẵặâầấẩẫậđeèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ"
 )
 
 METHODS = {
@@ -110,7 +106,7 @@ METHODS = {
             "o": LetterModification.HORN,
             "u": LetterModification.HORN,
         },
-        "z": None,
+        "z": ToneMark.RESET,
     },
     "vni": {
         "1": ToneMark.ACUTE,
@@ -122,7 +118,7 @@ METHODS = {
         "7": LetterModification.HORN,
         "8": LetterModification.BREVE,
         "9": LetterModification.STROKE,
-        "0": None,
+        "0": ToneMark.RESET,
     },
 }
 
@@ -136,7 +132,7 @@ if __name__ == "__main__":
     match argv[1]:
         case "compose":
             mappings = extract_mappings(CHARSETS)
-            generate_switch_cases(mappings, INDENT)
+            generate_switch_cases(mappings, VAR_NAME, INDENT)
         case "method":
             if len(argv) < 3:
                 print(f"Available methods: {", ".join(METHODS.keys())}")
@@ -149,7 +145,7 @@ if __name__ == "__main__":
 
             method = METHODS[name]
             define_func = argv[3] if len(argv) > 3 else DEFINE_FUNC
-            generate_keystroke_defines(method, define_func, MARK_RESET, INDENT)
+            generate_keystroke_defines(method, define_func, INDENT)
         case _:
             print("Unknown command")
             exit(1)
