@@ -298,28 +298,35 @@ enum ApplyResult minigox_apply_method(
 
                 if (conv_info.tone != TONE_UNMARKED) {
                     if (
-                        (conv_info.tone == TONE_RESET
-                        && info->tone != TONE_UNMARKED)
-                        || conv_info.tone == info->tone
+                        conv_info.tone == TONE_RESET
+                        && info->tone != TONE_UNMARKED
                     ) {
+                        info->tone = TONE_UNMARKED;
+                        return APPLY_OK;
+                    }
+
+                    if (conv_info.tone == info->tone) {
                         info->tone = TONE_UNMARKED;
                         return APPLY_REVERTED;
                     }
 
                     info->tone = conv_info.tone;
-                } else if (conv_info.mod != MOD_NONE) {
-                    if (
-                        (conv_info.mod == MOD_RESET && info->mod != MOD_NONE)
-                        || conv_info.mod == info->mod
-                    ) {
+                    return APPLY_OK;
+                }
+                if (conv_info.mod != MOD_NONE) {
+                    if (conv_info.mod == MOD_RESET && info->mod != MOD_NONE) {
+                        info->mod = MOD_NONE;
+                        return APPLY_OK;
+                    }
+
+                    if (conv_info.mod == info->mod) {
                         info->mod = MOD_NONE;
                         return APPLY_REVERTED;
                     }
 
                     info->mod = conv_info.mod;
+                    return APPLY_OK;
                 }
-
-                return APPLY_OK;
             }
 
             break;
