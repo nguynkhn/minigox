@@ -1,0 +1,28 @@
+CC      = gcc
+CFLAGS  = -Wall -Wextra
+CFLAGS += -O2 -std=c11
+LDFLAGS =
+
+PLATFORM ?= win32
+OBJ       = minigox.o
+OUT       = minigox_$(PLATFORM)
+
+RM = rm -f
+
+ifeq ($(PLATFORM),win32)
+	CFLAGS += -DMINIGOX_WIN32
+	RM      = del /Q
+endif
+
+.PHONY: all clean
+
+all: $(OUT)
+
+$(OUT): $(OBJ)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+%.o: %.c
+	$(CC) -o $@ -c $^ $(CFLAGS)
+
+clean:
+	$(RM) $(OUT) $(OBJ)

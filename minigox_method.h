@@ -1,0 +1,35 @@
+#ifndef MINIGOX_METHOD_H
+#define MINIGOX_METHOD_H
+
+static struct Keystroke TELEX[] = {
+    /* generated with mapping.py */
+    KEYSTROKE_DEFINE('f', TONE_GRAVE),
+    KEYSTROKE_DEFINE('s', TONE_ACUTE),
+    KEYSTROKE_DEFINE('r', TONE_HOOK_ABOVE),
+    KEYSTROKE_DEFINE('x', TONE_TILDE),
+    KEYSTROKE_DEFINE('j', TONE_UNDERDOT),
+    KEYSTROKE_DEFINE('a', 'a' | MOD_CIRCUMFLEX),
+    KEYSTROKE_DEFINE('d', 'd' | MOD_STROKE),
+    KEYSTROKE_DEFINE('e', 'e' | MOD_CIRCUMFLEX),
+    KEYSTROKE_DEFINE('o', 'o' | MOD_CIRCUMFLEX),
+    KEYSTROKE_DEFINE('w', 'a' | MOD_BREVE,
+                          'o' | MOD_HORN,
+                          'u' | MOD_HORN),
+    KEYSTROKE_DEFINE('z', TONE_RESET),
+};
+
+static struct Keystroke VNI[] = {
+    /* generated with mapping.py */
+    KEYSTROKE_DEFINE('1', TONE_ACUTE),
+    KEYSTROKE_DEFINE('2', TONE_GRAVE),
+    KEYSTROKE_DEFINE('3', TONE_HOOK_ABOVE),
+    KEYSTROKE_DEFINE('4', TONE_TILDE),
+    KEYSTROKE_DEFINE('5', TONE_UNDERDOT),
+    KEYSTROKE_DEFINE('6', MOD_CIRCUMFLEX),
+    KEYSTROKE_DEFINE('7', MOD_HORN),
+    KEYSTROKE_DEFINE('8', MOD_BREVE),
+    KEYSTROKE_DEFINE('9', MOD_STROKE),
+    KEYSTROKE_DEFINE('0', TONE_RESET),
+};
+
+#endif // MINIGOX_METHOD_H
