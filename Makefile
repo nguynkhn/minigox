@@ -3,7 +3,7 @@ CFLAGS  = -Wall -Wextra
 CFLAGS += -O2 -std=c11
 LDFLAGS =
 
-PLATFORM ?= win32
+PLATFORM ?= ???
 OBJ       = minigox.o
 OUT       = minigox_$(PLATFORM)
 

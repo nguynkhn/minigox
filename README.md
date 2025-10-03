@@ -8,7 +8,7 @@ are in the works.
 ## Usage
 
 ```console
-make PLATFORM=[win32]
+make PLATFORM=<win32>
 ```
 
 `minigox` supports Telex and VNI typing. The only difference from other IMEs is

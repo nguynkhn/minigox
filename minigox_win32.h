@@ -1,6 +1,7 @@
 #include <Windows.h>
 
 static HHOOK keyboard_hook, mouse_hook;
+
 static INPUT input[6] = {
     {
         .type = INPUT_KEYBOARD,
@@ -11,58 +12,7 @@ static INPUT input[6] = {
         .ki = { .wVk = VK_BACK, .dwFlags = KEYEVENTF_KEYUP },
     },
 };
-
-static int process_key(char key) {
-    enum ApplyResult result = minigox_apply_method(&method, &curr, key);
-    if (result == APPLY_UNCHANGED)
-        goto skip;
-
-    wchar_t ch = curr.base;
-    char unicode[4] = {0};
-    if (minigox_write_char(curr, unicode) == 0) {
-        MultiByteToWideChar(CP_UTF8, 0, unicode, -1, &ch, 1);
-    } else {
-        goto skip;
-    }
-
-    int count = 2;
-
-    input[count++] = (INPUT){
-        .type = INPUT_KEYBOARD,
-        .ki = { .wVk = 0, .wScan = ch, .dwFlags = KEYEVENTF_UNICODE },
-    };
-    input[count++] = (INPUT){
-        .type = INPUT_KEYBOARD,
-        .ki = {
-            .wVk = 0,
-            .wScan = ch,
-            .dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
-        },
-    };
-
-    if (result == APPLY_REVERTED) {
-        input[count++] = (INPUT){
-            .type = INPUT_KEYBOARD,
-            .ki = { .wVk = 0, .wScan = key, .dwFlags = KEYEVENTF_UNICODE },
-        };
-        input[count++] = (INPUT){
-            .type = INPUT_KEYBOARD,
-            .ki = {
-                .wVk = 0,
-                .wScan = key,
-                .dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
-            },
-        };
-        curr = minigox_unpack_char(key);
-    }
-
-    SendInput(count, input, sizeof(INPUT));
-    return 1;
-
-skip:
-    curr = minigox_unpack_char(key);
-    return 0;
-}
+static int count = 2;
 
 static void update_modifiers(int key_down, int vkCode) {
     switch (vkCode) {
@@ -132,7 +82,7 @@ LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
             buffer,
             ARRAYSIZE(buffer) - 1,
             0
-        ) == 1 && process_key(buffer[0]))
+        ) == 1 && minigox_process_char(buffer[0]))
             return 1;
     }
 
@@ -183,4 +133,28 @@ static bool minigox_run(void) {
 static void minigox_destroy(void) {
     UnhookWindowsHookEx(keyboard_hook);
     UnhookWindowsHookEx(mouse_hook);
+}
+
+static void minigox_enqueue_char(char *ch) {
+    wchar_t key = *ch;
+    if (ch[1] != '\0')
+        MultiByteToWideChar(CP_UTF8, 0, ch, -1, &key, 1);
+
+    input[count++] = (INPUT){
+        .type = INPUT_KEYBOARD,
+        .ki = { .wVk = 0, .wScan = key, .dwFlags = KEYEVENTF_UNICODE },
+    };
+    input[count++] = (INPUT){
+        .type = INPUT_KEYBOARD,
+        .ki = {
+            .wVk = 0,
+            .wScan = key,
+            .dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+        },
+    };
+}
+
+static void minigox_flush(void) {
+    SendInput(count, input, sizeof(INPUT));
+    count = 2;
 }

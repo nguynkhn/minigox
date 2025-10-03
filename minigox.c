@@ -19,9 +19,36 @@ static bool minigox_setup(void);
 static bool minigox_run(void);
 static void minigox_destroy(void);
 
-#ifdef MINIGOX_WIN32
+static void minigox_enqueue_char(char *);
+static void minigox_flush(void);
+
+static bool minigox_process_char(char key) {
+    enum ApplyResult result = minigox_apply_method(&method, &curr, key);
+    char unicode[4] = {0};
+
+    if (result == APPLY_UNCHANGED || minigox_write_char(curr, unicode) != 0) {
+        curr = minigox_unpack_char(key);
+        return false;
+    }
+
+    minigox_enqueue_char(unicode);
+
+    if (result == APPLY_REVERTED) {
+        unicode[0] = key;
+        unicode[1] = '\0';
+        minigox_enqueue_char(unicode);
+        curr = minigox_unpack_char(key);
+    }
+
+    minigox_flush();
+    return true;
+}
+
+#if defined(MINIGOX_WIN32)
 #include "minigox_win32.h"
-#endif // MINIGOX_WIN32
+#else
+#error "No implementation found"
+#endif
 
 int main(int argc, char *argv[]) {
     method.keystroke_num = ARRAY_LEN(TELEX);
