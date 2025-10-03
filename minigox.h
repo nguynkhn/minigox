@@ -55,13 +55,170 @@ static inline struct CharInfo minigox_unpack_char(pchar_t ch) {
 }
 
 /*
- * Compose to an UTF-8 character
- * - If `dest` is NULL, return the size of the character without
- *   the null terminator
- * - Otherwise, store the character in `dest` and return 0 or
- *   return -1 if no such combination is found
+ * Compose a Vietnamese character from CharInfo.
+ *
+ * Returns a pointer to a UTF-8 encoded string representing the
+ * fully composed character (with tone and modifier applied).
+ * Returns NULL if no valid composition exists.
  */
-int minigox_compose_char(struct CharInfo info, char *dest) {
+const char *minigox_compose_char(struct CharInfo info) {
+    pchar_t ch = info.base | info.tone | info.mod;
+
+    if (ch == info.base) {
+        static char buf[2];
+        buf[0] = info.base;
+        return buf;
+    }
+
+    switch (ch) {
+    /* generated with mapping.py */
+    case 'A' | TONE_GRAVE      | MOD_NONE:       return "À";
+    case 'A' | TONE_ACUTE      | MOD_NONE:       return "Á";
+    case 'A' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ả";
+    case 'A' | TONE_TILDE      | MOD_NONE:       return "Ã";
+    case 'A' | TONE_UNDERDOT   | MOD_NONE:       return "Ạ";
+    case 'A' | TONE_UNMARKED   | MOD_BREVE:      return "Ă";
+    case 'A' | TONE_GRAVE      | MOD_BREVE:      return "Ằ";
+    case 'A' | TONE_ACUTE      | MOD_BREVE:      return "Ắ";
+    case 'A' | TONE_HOOK_ABOVE | MOD_BREVE:      return "Ẳ";
+    case 'A' | TONE_TILDE      | MOD_BREVE:      return "Ẵ";
+    case 'A' | TONE_UNDERDOT   | MOD_BREVE:      return "Ặ";
+    case 'A' | TONE_UNMARKED   | MOD_CIRCUMFLEX: return "Â";
+    case 'A' | TONE_GRAVE      | MOD_CIRCUMFLEX: return "Ầ";
+    case 'A' | TONE_ACUTE      | MOD_CIRCUMFLEX: return "Ấ";
+    case 'A' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: return "Ẩ";
+    case 'A' | TONE_TILDE      | MOD_CIRCUMFLEX: return "Ẫ";
+    case 'A' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: return "Ậ";
+    case 'D' | TONE_UNMARKED   | MOD_STROKE:     return "Đ";
+    case 'E' | TONE_GRAVE      | MOD_NONE:       return "È";
+    case 'E' | TONE_ACUTE      | MOD_NONE:       return "É";
+    case 'E' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ẻ";
+    case 'E' | TONE_TILDE      | MOD_NONE:       return "Ẽ";
+    case 'E' | TONE_UNDERDOT   | MOD_NONE:       return "Ẹ";
+    case 'E' | TONE_UNMARKED   | MOD_CIRCUMFLEX: return "Ê";
+    case 'E' | TONE_GRAVE      | MOD_CIRCUMFLEX: return "Ề";
+    case 'E' | TONE_ACUTE      | MOD_CIRCUMFLEX: return "Ế";
+    case 'E' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: return "Ể";
+    case 'E' | TONE_TILDE      | MOD_CIRCUMFLEX: return "Ễ";
+    case 'E' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: return "Ệ";
+    case 'I' | TONE_GRAVE      | MOD_NONE:       return "Ì";
+    case 'I' | TONE_ACUTE      | MOD_NONE:       return "Í";
+    case 'I' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ỉ";
+    case 'I' | TONE_TILDE      | MOD_NONE:       return "Ĩ";
+    case 'I' | TONE_UNDERDOT   | MOD_NONE:       return "Ị";
+    case 'O' | TONE_GRAVE      | MOD_NONE:       return "Ò";
+    case 'O' | TONE_ACUTE      | MOD_NONE:       return "Ó";
+    case 'O' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ỏ";
+    case 'O' | TONE_TILDE      | MOD_NONE:       return "Õ";
+    case 'O' | TONE_UNDERDOT   | MOD_NONE:       return "Ọ";
+    case 'O' | TONE_UNMARKED   | MOD_CIRCUMFLEX: return "Ô";
+    case 'O' | TONE_GRAVE      | MOD_CIRCUMFLEX: return "Ồ";
+    case 'O' | TONE_ACUTE      | MOD_CIRCUMFLEX: return "Ố";
+    case 'O' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: return "Ổ";
+    case 'O' | TONE_TILDE      | MOD_CIRCUMFLEX: return "Ỗ";
+    case 'O' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: return "Ộ";
+    case 'O' | TONE_UNMARKED   | MOD_HORN:       return "Ơ";
+    case 'O' | TONE_GRAVE      | MOD_HORN:       return "Ờ";
+    case 'O' | TONE_ACUTE      | MOD_HORN:       return "Ớ";
+    case 'O' | TONE_HOOK_ABOVE | MOD_HORN:       return "Ở";
+    case 'O' | TONE_TILDE      | MOD_HORN:       return "Ỡ";
+    case 'O' | TONE_UNDERDOT   | MOD_HORN:       return "Ợ";
+    case 'U' | TONE_GRAVE      | MOD_NONE:       return "Ù";
+    case 'U' | TONE_ACUTE      | MOD_NONE:       return "Ú";
+    case 'U' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ủ";
+    case 'U' | TONE_TILDE      | MOD_NONE:       return "Ũ";
+    case 'U' | TONE_UNDERDOT   | MOD_NONE:       return "Ụ";
+    case 'U' | TONE_UNMARKED   | MOD_HORN:       return "Ư";
+    case 'U' | TONE_GRAVE      | MOD_HORN:       return "Ừ";
+    case 'U' | TONE_ACUTE      | MOD_HORN:       return "Ứ";
+    case 'U' | TONE_HOOK_ABOVE | MOD_HORN:       return "Ử";
+    case 'U' | TONE_TILDE      | MOD_HORN:       return "Ữ";
+    case 'U' | TONE_UNDERDOT   | MOD_HORN:       return "Ự";
+    case 'Y' | TONE_GRAVE      | MOD_NONE:       return "Ỳ";
+    case 'Y' | TONE_ACUTE      | MOD_NONE:       return "Ý";
+    case 'Y' | TONE_HOOK_ABOVE | MOD_NONE:       return "Ỷ";
+    case 'Y' | TONE_TILDE      | MOD_NONE:       return "Ỹ";
+    case 'Y' | TONE_UNDERDOT   | MOD_NONE:       return "Ỵ";
+    case 'a' | TONE_GRAVE      | MOD_NONE:       return "à";
+    case 'a' | TONE_ACUTE      | MOD_NONE:       return "á";
+    case 'a' | TONE_HOOK_ABOVE | MOD_NONE:       return "ả";
+    case 'a' | TONE_TILDE      | MOD_NONE:       return "ã";
+    case 'a' | TONE_UNDERDOT   | MOD_NONE:       return "ạ";
+    case 'a' | TONE_UNMARKED   | MOD_BREVE:      return "ă";
+    case 'a' | TONE_GRAVE      | MOD_BREVE:      return "ằ";
+    case 'a' | TONE_ACUTE      | MOD_BREVE:      return "ắ";
+    case 'a' | TONE_HOOK_ABOVE | MOD_BREVE:      return "ẳ";
+    case 'a' | TONE_TILDE      | MOD_BREVE:      return "ẵ";
+    case 'a' | TONE_UNDERDOT   | MOD_BREVE:      return "ặ";
+    case 'a' | TONE_UNMARKED   | MOD_CIRCUMFLEX: return "â";
+    case 'a' | TONE_GRAVE      | MOD_CIRCUMFLEX: return "ầ";
+    case 'a' | TONE_ACUTE      | MOD_CIRCUMFLEX: return "ấ";
+    case 'a' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: return "ẩ";
+    case 'a' | TONE_TILDE      | MOD_CIRCUMFLEX: return "ẫ";
+    case 'a' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: return "ậ";
+    case 'd' | TONE_UNMARKED   | MOD_STROKE:     return "đ";
+    case 'e' | TONE_UNMARKED   | MOD_NONE:       return "e";
+    case 'e' | TONE_GRAVE      | MOD_NONE:       return "è";
+    case 'e' | TONE_ACUTE      | MOD_NONE:       return "é";
+    case 'e' | TONE_HOOK_ABOVE | MOD_NONE:       return "ẻ";
+    case 'e' | TONE_TILDE      | MOD_NONE:       return "ẽ";
+    case 'e' | TONE_UNDERDOT   | MOD_NONE:       return "ẹ";
+    case 'e' | TONE_UNMARKED   | MOD_CIRCUMFLEX: return "ê";
+    case 'e' | TONE_GRAVE      | MOD_CIRCUMFLEX: return "ề";
+    case 'e' | TONE_ACUTE      | MOD_CIRCUMFLEX: return "ế";
+    case 'e' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: return "ể";
+    case 'e' | TONE_TILDE      | MOD_CIRCUMFLEX: return "ễ";
+    case 'e' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: return "ệ";
+    case 'i' | TONE_GRAVE      | MOD_NONE:       return "ì";
+    case 'i' | TONE_ACUTE      | MOD_NONE:       return "í";
+    case 'i' | TONE_HOOK_ABOVE | MOD_NONE:       return "ỉ";
+    case 'i' | TONE_TILDE      | MOD_NONE:       return "ĩ";
+    case 'i' | TONE_UNDERDOT   | MOD_NONE:       return "ị";
+    case 'o' | TONE_GRAVE      | MOD_NONE:       return "ò";
+    case 'o' | TONE_ACUTE      | MOD_NONE:       return "ó";
+    case 'o' | TONE_HOOK_ABOVE | MOD_NONE:       return "ỏ";
+    case 'o' | TONE_TILDE      | MOD_NONE:       return "õ";
+    case 'o' | TONE_UNDERDOT   | MOD_NONE:       return "ọ";
+    case 'o' | TONE_UNMARKED   | MOD_CIRCUMFLEX: return "ô";
+    case 'o' | TONE_GRAVE      | MOD_CIRCUMFLEX: return "ồ";
+    case 'o' | TONE_ACUTE      | MOD_CIRCUMFLEX: return "ố";
+    case 'o' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: return "ổ";
+    case 'o' | TONE_TILDE      | MOD_CIRCUMFLEX: return "ỗ";
+    case 'o' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: return "ộ";
+    case 'o' | TONE_UNMARKED   | MOD_HORN:       return "ơ";
+    case 'o' | TONE_GRAVE      | MOD_HORN:       return "ờ";
+    case 'o' | TONE_ACUTE      | MOD_HORN:       return "ớ";
+    case 'o' | TONE_HOOK_ABOVE | MOD_HORN:       return "ở";
+    case 'o' | TONE_TILDE      | MOD_HORN:       return "ỡ";
+    case 'o' | TONE_UNDERDOT   | MOD_HORN:       return "ợ";
+    case 'u' | TONE_GRAVE      | MOD_NONE:       return "ù";
+    case 'u' | TONE_ACUTE      | MOD_NONE:       return "ú";
+    case 'u' | TONE_HOOK_ABOVE | MOD_NONE:       return "ủ";
+    case 'u' | TONE_TILDE      | MOD_NONE:       return "ũ";
+    case 'u' | TONE_UNDERDOT   | MOD_NONE:       return "ụ";
+    case 'u' | TONE_UNMARKED   | MOD_HORN:       return "ư";
+    case 'u' | TONE_GRAVE      | MOD_HORN:       return "ừ";
+    case 'u' | TONE_ACUTE      | MOD_HORN:       return "ứ";
+    case 'u' | TONE_HOOK_ABOVE | MOD_HORN:       return "ử";
+    case 'u' | TONE_TILDE      | MOD_HORN:       return "ữ";
+    case 'u' | TONE_UNDERDOT   | MOD_HORN:       return "ự";
+    case 'y' | TONE_GRAVE      | MOD_NONE:       return "ỳ";
+    case 'y' | TONE_ACUTE      | MOD_NONE:       return "ý";
+    case 'y' | TONE_HOOK_ABOVE | MOD_NONE:       return "ỷ";
+    case 'y' | TONE_TILDE      | MOD_NONE:       return "ỹ";
+    case 'y' | TONE_UNDERDOT   | MOD_NONE:       return "ỵ";
+    default:                                     return 0;
+    }
+}
+
+/*
+ * Write a composed Vietnamese character into a buffer
+ *
+ * Returns 0 on success, -1 if composition failed.
+ * If `dest` is NULL, returns the number of bytes required
+ * (not including null terminator).
+ */
+int minigox_write_char(struct CharInfo info, char *dest) {
     int len = (info.tone != TONE_UNMARKED) + (info.mod != MOD_NONE) + 1;
 
     if (!dest)
@@ -72,149 +229,9 @@ int minigox_compose_char(struct CharInfo info, char *dest) {
         return 0;
     }
 
-    pchar_t ch = info.base | info.tone | info.mod;
-    char *unicode;
-
-    switch (ch) {
-    /* generated with mapping.py */
-    case 'A' | TONE_GRAVE      | MOD_NONE:       unicode = "À"; break;
-    case 'A' | TONE_ACUTE      | MOD_NONE:       unicode = "Á"; break;
-    case 'A' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "Ả"; break;
-    case 'A' | TONE_TILDE      | MOD_NONE:       unicode = "Ã"; break;
-    case 'A' | TONE_UNDERDOT   | MOD_NONE:       unicode = "Ạ"; break;
-    case 'A' | TONE_UNMARKED   | MOD_BREVE:      unicode = "Ă"; break;
-    case 'A' | TONE_GRAVE      | MOD_BREVE:      unicode = "Ằ"; break;
-    case 'A' | TONE_ACUTE      | MOD_BREVE:      unicode = "Ắ"; break;
-    case 'A' | TONE_HOOK_ABOVE | MOD_BREVE:      unicode = "Ẳ"; break;
-    case 'A' | TONE_TILDE      | MOD_BREVE:      unicode = "Ẵ"; break;
-    case 'A' | TONE_UNDERDOT   | MOD_BREVE:      unicode = "Ặ"; break;
-    case 'A' | TONE_UNMARKED   | MOD_CIRCUMFLEX: unicode = "Â"; break;
-    case 'A' | TONE_GRAVE      | MOD_CIRCUMFLEX: unicode = "Ầ"; break;
-    case 'A' | TONE_ACUTE      | MOD_CIRCUMFLEX: unicode = "Ấ"; break;
-    case 'A' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: unicode = "Ẩ"; break;
-    case 'A' | TONE_TILDE      | MOD_CIRCUMFLEX: unicode = "Ẫ"; break;
-    case 'A' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: unicode = "Ậ"; break;
-    case 'D' | TONE_UNMARKED   | MOD_STROKE:     unicode = "Đ"; break;
-    case 'E' | TONE_UNMARKED   | MOD_NONE:       unicode = "E"; break;
-    case 'E' | TONE_GRAVE      | MOD_NONE:       unicode = "È"; break;
-    case 'E' | TONE_ACUTE      | MOD_NONE:       unicode = "É"; break;
-    case 'E' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "Ẻ"; break;
-    case 'E' | TONE_TILDE      | MOD_NONE:       unicode = "Ẽ"; break;
-    case 'E' | TONE_UNDERDOT   | MOD_NONE:       unicode = "Ẹ"; break;
-    case 'E' | TONE_UNMARKED   | MOD_CIRCUMFLEX: unicode = "Ê"; break;
-    case 'E' | TONE_GRAVE      | MOD_CIRCUMFLEX: unicode = "Ề"; break;
-    case 'E' | TONE_ACUTE      | MOD_CIRCUMFLEX: unicode = "Ế"; break;
-    case 'E' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: unicode = "Ể"; break;
-    case 'E' | TONE_TILDE      | MOD_CIRCUMFLEX: unicode = "Ễ"; break;
-    case 'E' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: unicode = "Ệ"; break;
-    case 'I' | TONE_GRAVE      | MOD_NONE:       unicode = "Ì"; break;
-    case 'I' | TONE_ACUTE      | MOD_NONE:       unicode = "Í"; break;
-    case 'I' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "Ỉ"; break;
-    case 'I' | TONE_TILDE      | MOD_NONE:       unicode = "Ĩ"; break;
-    case 'I' | TONE_UNDERDOT   | MOD_NONE:       unicode = "Ị"; break;
-    case 'O' | TONE_GRAVE      | MOD_NONE:       unicode = "Ò"; break;
-    case 'O' | TONE_ACUTE      | MOD_NONE:       unicode = "Ó"; break;
-    case 'O' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "Ỏ"; break;
-    case 'O' | TONE_TILDE      | MOD_NONE:       unicode = "Õ"; break;
-    case 'O' | TONE_UNDERDOT   | MOD_NONE:       unicode = "Ọ"; break;
-    case 'O' | TONE_UNMARKED   | MOD_CIRCUMFLEX: unicode = "Ô"; break;
-    case 'O' | TONE_GRAVE      | MOD_CIRCUMFLEX: unicode = "Ồ"; break;
-    case 'O' | TONE_ACUTE      | MOD_CIRCUMFLEX: unicode = "Ố"; break;
-    case 'O' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: unicode = "Ổ"; break;
-    case 'O' | TONE_TILDE      | MOD_CIRCUMFLEX: unicode = "Ỗ"; break;
-    case 'O' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: unicode = "Ộ"; break;
-    case 'O' | TONE_UNMARKED   | MOD_HORN:       unicode = "Ơ"; break;
-    case 'O' | TONE_GRAVE      | MOD_HORN:       unicode = "Ờ"; break;
-    case 'O' | TONE_ACUTE      | MOD_HORN:       unicode = "Ớ"; break;
-    case 'O' | TONE_HOOK_ABOVE | MOD_HORN:       unicode = "Ở"; break;
-    case 'O' | TONE_TILDE      | MOD_HORN:       unicode = "Ỡ"; break;
-    case 'O' | TONE_UNDERDOT   | MOD_HORN:       unicode = "Ợ"; break;
-    case 'U' | TONE_GRAVE      | MOD_NONE:       unicode = "Ù"; break;
-    case 'U' | TONE_ACUTE      | MOD_NONE:       unicode = "Ú"; break;
-    case 'U' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "Ủ"; break;
-    case 'U' | TONE_TILDE      | MOD_NONE:       unicode = "Ũ"; break;
-    case 'U' | TONE_UNDERDOT   | MOD_NONE:       unicode = "Ụ"; break;
-    case 'U' | TONE_UNMARKED   | MOD_HORN:       unicode = "Ư"; break;
-    case 'U' | TONE_GRAVE      | MOD_HORN:       unicode = "Ừ"; break;
-    case 'U' | TONE_ACUTE      | MOD_HORN:       unicode = "Ứ"; break;
-    case 'U' | TONE_HOOK_ABOVE | MOD_HORN:       unicode = "Ử"; break;
-    case 'U' | TONE_TILDE      | MOD_HORN:       unicode = "Ữ"; break;
-    case 'U' | TONE_UNDERDOT   | MOD_HORN:       unicode = "Ự"; break;
-    case 'Y' | TONE_GRAVE      | MOD_NONE:       unicode = "Ỳ"; break;
-    case 'Y' | TONE_ACUTE      | MOD_NONE:       unicode = "Ý"; break;
-    case 'Y' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "Ỷ"; break;
-    case 'Y' | TONE_TILDE      | MOD_NONE:       unicode = "Ỹ"; break;
-    case 'Y' | TONE_UNDERDOT   | MOD_NONE:       unicode = "Ỵ"; break;
-    case 'a' | TONE_GRAVE      | MOD_NONE:       unicode = "à"; break;
-    case 'a' | TONE_ACUTE      | MOD_NONE:       unicode = "á"; break;
-    case 'a' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "ả"; break;
-    case 'a' | TONE_TILDE      | MOD_NONE:       unicode = "ã"; break;
-    case 'a' | TONE_UNDERDOT   | MOD_NONE:       unicode = "ạ"; break;
-    case 'a' | TONE_UNMARKED   | MOD_BREVE:      unicode = "ă"; break;
-    case 'a' | TONE_GRAVE      | MOD_BREVE:      unicode = "ằ"; break;
-    case 'a' | TONE_ACUTE      | MOD_BREVE:      unicode = "ắ"; break;
-    case 'a' | TONE_HOOK_ABOVE | MOD_BREVE:      unicode = "ẳ"; break;
-    case 'a' | TONE_TILDE      | MOD_BREVE:      unicode = "ẵ"; break;
-    case 'a' | TONE_UNDERDOT   | MOD_BREVE:      unicode = "ặ"; break;
-    case 'a' | TONE_UNMARKED   | MOD_CIRCUMFLEX: unicode = "â"; break;
-    case 'a' | TONE_GRAVE      | MOD_CIRCUMFLEX: unicode = "ầ"; break;
-    case 'a' | TONE_ACUTE      | MOD_CIRCUMFLEX: unicode = "ấ"; break;
-    case 'a' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: unicode = "ẩ"; break;
-    case 'a' | TONE_TILDE      | MOD_CIRCUMFLEX: unicode = "ẫ"; break;
-    case 'a' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: unicode = "ậ"; break;
-    case 'd' | TONE_UNMARKED   | MOD_STROKE:     unicode = "đ"; break;
-    case 'e' | TONE_UNMARKED   | MOD_NONE:       unicode = "e"; break;
-    case 'e' | TONE_GRAVE      | MOD_NONE:       unicode = "è"; break;
-    case 'e' | TONE_ACUTE      | MOD_NONE:       unicode = "é"; break;
-    case 'e' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "ẻ"; break;
-    case 'e' | TONE_TILDE      | MOD_NONE:       unicode = "ẽ"; break;
-    case 'e' | TONE_UNDERDOT   | MOD_NONE:       unicode = "ẹ"; break;
-    case 'e' | TONE_UNMARKED   | MOD_CIRCUMFLEX: unicode = "ê"; break;
-    case 'e' | TONE_GRAVE      | MOD_CIRCUMFLEX: unicode = "ề"; break;
-    case 'e' | TONE_ACUTE      | MOD_CIRCUMFLEX: unicode = "ế"; break;
-    case 'e' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: unicode = "ể"; break;
-    case 'e' | TONE_TILDE      | MOD_CIRCUMFLEX: unicode = "ễ"; break;
-    case 'e' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: unicode = "ệ"; break;
-    case 'i' | TONE_GRAVE      | MOD_NONE:       unicode = "ì"; break;
-    case 'i' | TONE_ACUTE      | MOD_NONE:       unicode = "í"; break;
-    case 'i' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "ỉ"; break;
-    case 'i' | TONE_TILDE      | MOD_NONE:       unicode = "ĩ"; break;
-    case 'i' | TONE_UNDERDOT   | MOD_NONE:       unicode = "ị"; break;
-    case 'o' | TONE_GRAVE      | MOD_NONE:       unicode = "ò"; break;
-    case 'o' | TONE_ACUTE      | MOD_NONE:       unicode = "ó"; break;
-    case 'o' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "ỏ"; break;
-    case 'o' | TONE_TILDE      | MOD_NONE:       unicode = "õ"; break;
-    case 'o' | TONE_UNDERDOT   | MOD_NONE:       unicode = "ọ"; break;
-    case 'o' | TONE_UNMARKED   | MOD_CIRCUMFLEX: unicode = "ô"; break;
-    case 'o' | TONE_GRAVE      | MOD_CIRCUMFLEX: unicode = "ồ"; break;
-    case 'o' | TONE_ACUTE      | MOD_CIRCUMFLEX: unicode = "ố"; break;
-    case 'o' | TONE_HOOK_ABOVE | MOD_CIRCUMFLEX: unicode = "ổ"; break;
-    case 'o' | TONE_TILDE      | MOD_CIRCUMFLEX: unicode = "ỗ"; break;
-    case 'o' | TONE_UNDERDOT   | MOD_CIRCUMFLEX: unicode = "ộ"; break;
-    case 'o' | TONE_UNMARKED   | MOD_HORN:       unicode = "ơ"; break;
-    case 'o' | TONE_GRAVE      | MOD_HORN:       unicode = "ờ"; break;
-    case 'o' | TONE_ACUTE      | MOD_HORN:       unicode = "ớ"; break;
-    case 'o' | TONE_HOOK_ABOVE | MOD_HORN:       unicode = "ở"; break;
-    case 'o' | TONE_TILDE      | MOD_HORN:       unicode = "ỡ"; break;
-    case 'o' | TONE_UNDERDOT   | MOD_HORN:       unicode = "ợ"; break;
-    case 'u' | TONE_GRAVE      | MOD_NONE:       unicode = "ù"; break;
-    case 'u' | TONE_ACUTE      | MOD_NONE:       unicode = "ú"; break;
-    case 'u' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "ủ"; break;
-    case 'u' | TONE_TILDE      | MOD_NONE:       unicode = "ũ"; break;
-    case 'u' | TONE_UNDERDOT   | MOD_NONE:       unicode = "ụ"; break;
-    case 'u' | TONE_UNMARKED   | MOD_HORN:       unicode = "ư"; break;
-    case 'u' | TONE_GRAVE      | MOD_HORN:       unicode = "ừ"; break;
-    case 'u' | TONE_ACUTE      | MOD_HORN:       unicode = "ứ"; break;
-    case 'u' | TONE_HOOK_ABOVE | MOD_HORN:       unicode = "ử"; break;
-    case 'u' | TONE_TILDE      | MOD_HORN:       unicode = "ữ"; break;
-    case 'u' | TONE_UNDERDOT   | MOD_HORN:       unicode = "ự"; break;
-    case 'y' | TONE_GRAVE      | MOD_NONE:       unicode = "ỳ"; break;
-    case 'y' | TONE_ACUTE      | MOD_NONE:       unicode = "ý"; break;
-    case 'y' | TONE_HOOK_ABOVE | MOD_NONE:       unicode = "ỷ"; break;
-    case 'y' | TONE_TILDE      | MOD_NONE:       unicode = "ỹ"; break;
-    case 'y' | TONE_UNDERDOT   | MOD_NONE:       unicode = "ỵ"; break;
-    default:                                     return -1;
-    }
+    const char *unicode = minigox_compose_char(info);
+    if (!unicode)
+        return -1;
 
     while (*unicode)
         *dest++ = *unicode++;
@@ -277,6 +294,11 @@ enum ApplyResult {
     APPLY_UNCHANGED,
 };
 
+/*
+ * Note: this function does not check whether the resulting
+ * combination is a valid Vietnamese character.
+ * Better use `minigox_compose_char` after applying.
+ */
 enum ApplyResult minigox_apply_method(
     const struct Method *method,
     struct CharInfo *info,
