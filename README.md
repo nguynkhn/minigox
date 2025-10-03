@@ -7,7 +7,9 @@ are in the works.
 
 ## Usage
 
-Compile `minigox.c` using MSVC or MinGW.
+```console
+make PLATFORM=[win32]
+```
 
 `minigox` supports Telex and VNI typing. The only difference from other IMEs is
 that `minigox` only processes one character at a time.
