@@ -43,7 +43,7 @@ static void update_modifiers(int key_down, int vkCode) {
     }
 }
 
-LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
+static LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
     if (ncode == HC_ACTION) {
         PKBDLLHOOKSTRUCT kbd = (PKBDLLHOOKSTRUCT)lparam;
         DWORD vkCode = kbd->vkCode;
