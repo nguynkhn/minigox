@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    minigox_destroy();
     return 0;
 }
 
