@@ -58,13 +58,13 @@ def extract_mappings(charsets):
 
     return mappings
 
-def generate_switch_cases(mappings, var_name="", indent=""):
-    for letter, mapping in mappings.items():
+def generate_switch_cases(mappings, indent=""):
+    for char, mapping in mappings.items():
         print(
             f"{indent}case '{mapping.base}' | "
             f"{mapping.tone.enum_name().ljust(MAX_TONE_LEN)} | "
             f"{(mapping.mod.enum_name() + ":").ljust(MAX_MOD_LEN + 1)} "
-            f"{var_name} = \"{letter}\"; break;"
+            f"return \"{char}\";"
         )
 
 def generate_keystroke_defines(method, define_func="", indent=""):
@@ -81,13 +81,12 @@ def generate_keystroke_defines(method, define_func="", indent=""):
         joined_str = f",\n{' ' * len(define_str)}".join(conversion_str)
         print(f"{define_str}{joined_str}),")
 
-VAR_NAME = "unicode"
 DEFINE_FUNC = "KEYSTROKE_DEFINE"
 INDENT = " " * 4
 
 CHARSETS = (
-    "ÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐEÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ"
-    "àáảãạăằắẳẵặâầấẩẫậđeèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ"
+    "ÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬĐÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ"
+    "àáảãạăằắẳẵặâầấẩẫậđèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ"
 )
 
 METHODS = {
@@ -132,7 +131,7 @@ if __name__ == "__main__":
     match argv[1]:
         case "compose":
             mappings = extract_mappings(CHARSETS)
-            generate_switch_cases(mappings, VAR_NAME, INDENT)
+            generate_switch_cases(mappings, INDENT)
         case "method":
             if len(argv) < 3:
                 print(f"Available methods: {", ".join(METHODS.keys())}")
