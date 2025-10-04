@@ -18,8 +18,8 @@ that `minigox` only processes one character at a time.
 
 [UniKey](https://www.unikey.org/), one of the most popular IMEs for Vietnamese
 typing, isn't really open-source...\
-<small>They claim it is, but the source code
-is like... from 20 years ago...</small>
+<sup><sub>They claim it is, but the source code
+is like... from 20 years ago...</sub></sup>
 
 There are, of course, [some](https://github.com/tuyenvm/OpenKey/)
 [alternatives](https://github.com/lamquangminh/EVKey/), but most of them are
