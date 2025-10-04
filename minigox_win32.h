@@ -18,26 +18,26 @@ static void update_modifiers(bool keydown, int vkCode) {
     switch (vkCode) {
     case VK_LSHIFT:
     case VK_RSHIFT:
-        modifiers.shift = key_down;
+        modifiers.shift = keydown;
         break;
     case VK_LCONTROL:
     case VK_RCONTROL:
-        modifiers.ctrl = key_down;
+        modifiers.ctrl = keydown;
         break;
     case VK_LMENU:
     case VK_RMENU:
-        modifiers.alt = key_down;
+        modifiers.alt = keydown;
         break;
     case VK_CAPITAL:
-        if (key_down)
+        if (keydown)
             modifiers.caps = !modifiers.caps;
         break;
     case VK_NUMLOCK:
-        if (key_down)
+        if (keydown)
             modifiers.num = !modifiers.num;
         break;
     case VK_SCROLL:
-        if (key_down)
+        if (keydown)
             modifiers.scroll = !modifiers.scroll;
         break;
     }
@@ -71,7 +71,7 @@ static LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
         DWORD vkCode = kbd->vkCode;
         bool keydown = (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN);
 
-        update_modifiers(key_down, vkCode);
+        update_modifiers(keydown, vkCode);
 
         if (!keydown || kbd->flags & LLKHF_INJECTED)
             goto skip;
@@ -100,17 +100,18 @@ static LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
 
         WCHAR buffer[16] = {0};
         if (
-			ToUnicode(
-				vkCode,
-				kbd->scanCode,
-				keyboard_state,
-				buffer,
-				ARRAYSIZE(buffer) - 1,
-				0
-			) == 1
-			&& minigox_process_char(buffer[0])
-		)
+            ToUnicode(
+    			vkCode,
+    			kbd->scanCode,
+    			keyboard_state,
+    			buffer,
+    			ARRAYSIZE(buffer) - 1,
+    			0
+    		) == 1
+            && minigox_process_char(buffer[0])
+        ) {
             return 1;
+        }
     }
 
 skip:
