@@ -1,6 +1,6 @@
 #include <Windows.h>
 
-static HHOOK keyboard_hook, mouse_hook;
+static HHOOK mouse_hook, keyboard_hook;
 
 static INPUT input[6] = {
     {
@@ -14,7 +14,7 @@ static INPUT input[6] = {
 };
 static int count = 2;
 
-static void update_modifiers(int key_down, int vkCode) {
+static void update_modifiers(bool keydown, int vkCode) {
     switch (vkCode) {
     case VK_LSHIFT:
     case VK_RSHIFT:
@@ -43,53 +43,6 @@ static void update_modifiers(int key_down, int vkCode) {
     }
 }
 
-static LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
-    if (ncode == HC_ACTION) {
-        PKBDLLHOOKSTRUCT kbd = (PKBDLLHOOKSTRUCT)lparam;
-        DWORD vkCode = kbd->vkCode;
-        int key_down = (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN);
-
-        update_modifiers(key_down, vkCode);
-
-        if (!key_down || kbd->flags & LLKHF_INJECTED)
-            goto skip;
-
-        if (vkCode == VK_DELETE || vkCode == VK_RETURN
-            || vkCode == VK_HOME || vkCode == VK_END
-            || vkCode == VK_PRIOR || vkCode == VK_NEXT
-            || vkCode == VK_LEFT || vkCode == VK_RIGHT
-            || vkCode == VK_UP || vkCode == VK_DOWN
-            || modifiers.ctrl || modifiers.alt) {
-            curr = minigox_unpack_char(0);
-            goto skip;
-        }
-
-        BYTE keyboard_state[256] = {0};
-        if (modifiers.shift)
-            keyboard_state[VK_SHIFT] |= 0x80;
-        if (modifiers.caps)
-            keyboard_state[VK_CAPITAL] |= 0x01;
-        if (modifiers.num)
-            keyboard_state[VK_NUMLOCK] |= 0x01;
-        if (modifiers.scroll)
-            keyboard_state[VK_SCROLL] |= 0x01;
-
-        WCHAR buffer[16] = {0};
-        if (ToUnicode(
-            vkCode,
-            kbd->scanCode,
-            keyboard_state,
-            buffer,
-            ARRAYSIZE(buffer) - 1,
-            0
-        ) == 1 && minigox_process_char(buffer[0]))
-            return 1;
-    }
-
-skip:
-    return CallNextHookEx(NULL, ncode, wparam, lparam);
-}
-
 static LRESULT CALLBACK mouse_proc(int ncode, WPARAM wparam, LPARAM lparam) {
     if (ncode == HC_ACTION) {
         PMSLLHOOKSTRUCT _mouse = (PMSLLHOOKSTRUCT)lparam;
@@ -112,11 +65,63 @@ static LRESULT CALLBACK mouse_proc(int ncode, WPARAM wparam, LPARAM lparam) {
     return CallNextHookEx(NULL, ncode, wparam, lparam);
 }
 
-static bool minigox_setup(void) {
-    keyboard_hook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_proc, NULL, 0);
-    mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, mouse_proc, NULL, 0);
+static LRESULT CALLBACK keyboard_proc(int ncode, WPARAM wparam, LPARAM lparam) {
+    if (ncode == HC_ACTION) {
+        PKBDLLHOOKSTRUCT kbd = (PKBDLLHOOKSTRUCT)lparam;
+        DWORD vkCode = kbd->vkCode;
+        bool keydown = (wparam == WM_KEYDOWN || wparam == WM_SYSKEYDOWN);
 
-    return keyboard_hook != NULL && mouse_hook != NULL;
+        update_modifiers(key_down, vkCode);
+
+        if (!keydown || kbd->flags & LLKHF_INJECTED)
+            goto skip;
+
+        if (
+			vkCode == VK_DELETE || vkCode == VK_RETURN
+            || vkCode == VK_HOME || vkCode == VK_END
+            || vkCode == VK_PRIOR || vkCode == VK_NEXT
+            || vkCode == VK_LEFT || vkCode == VK_RIGHT
+            || vkCode == VK_UP || vkCode == VK_DOWN
+            || modifiers.ctrl || modifiers.alt
+        ) {
+            curr = minigox_unpack_char(0);
+            goto skip;
+        }
+
+        BYTE keyboard_state[256] = {0};
+        if (modifiers.shift)
+            keyboard_state[VK_SHIFT] |= 0x80;
+        if (modifiers.caps)
+            keyboard_state[VK_CAPITAL] |= 0x01;
+        if (modifiers.num)
+            keyboard_state[VK_NUMLOCK] |= 0x01;
+        if (modifiers.scroll)
+            keyboard_state[VK_SCROLL] |= 0x01;
+
+        WCHAR buffer[16] = {0};
+        if (
+			ToUnicode(
+				vkCode,
+				kbd->scanCode,
+				keyboard_state,
+				buffer,
+				ARRAYSIZE(buffer) - 1,
+				0
+			) == 1
+			&& minigox_process_char(buffer[0])
+		)
+            return 1;
+    }
+
+skip:
+    return CallNextHookEx(NULL, ncode, wparam, lparam);
+}
+
+static bool minigox_setup(void) {
+    mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, mouse_proc, NULL, 0);
+    keyboard_hook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_proc, NULL, 0);
+
+    return mouse_hook != NULL && keyboard_hook != NULL;
 }
 
 static bool minigox_run(void) {
@@ -131,8 +136,8 @@ static bool minigox_run(void) {
 }
 
 static void minigox_destroy(void) {
-    UnhookWindowsHookEx(keyboard_hook);
     UnhookWindowsHookEx(mouse_hook);
+    UnhookWindowsHookEx(keyboard_hook);
 }
 
 static void minigox_enqueue_char(char *ch) {
