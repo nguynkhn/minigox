@@ -1,2 +1,5 @@
 *.o
 *.exe
+
+minigox_win32.exe
+minigox_x11

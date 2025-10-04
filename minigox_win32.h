@@ -97,7 +97,7 @@ static LRESULT CALLBACK mouse_proc(int ncode, WPARAM wparam, LPARAM lparam) {
         switch (wparam) {
         case WM_LBUTTONDOWN:
         case WM_RBUTTONDOWN:
-            if (_mouse->pt.x != mouse.x && _mouse->pt.y != mouse.y)
+            if (_mouse->pt.x != mouse.x || _mouse->pt.y != mouse.y)
                 curr = minigox_unpack_char(0);
 
             break;
