@@ -13,10 +13,6 @@ ifeq ($(PLATFORM),win32)
 	CFLAGS += -DMINIGOX_WIN32
 	RM      = del /Q
 endif
-ifeq ($(PLATFORM),x11)
-	CFLAGS += -DMINIGOX_X11
-	LDFLAGS = -lX11 -lXi
-endif
 
 .PHONY: all clean
 

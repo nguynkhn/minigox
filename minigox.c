@@ -46,8 +46,6 @@ static bool minigox_process_char(char key) {
 
 #if defined(MINIGOX_WIN32)
 #include "minigox_win32.h"
-#elif defined(MINIGOX_X11)
-#include "minigox_x11.h"
 #else
 #error "No implementation found"
 #endif
