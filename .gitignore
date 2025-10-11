@@ -2,4 +2,4 @@
 *.exe
 
 minigox_win32.exe
-minigox_x11
+minigox_linux

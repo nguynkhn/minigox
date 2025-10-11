@@ -13,6 +13,10 @@ ifeq ($(PLATFORM),win32)
 	CFLAGS += -DMINIGOX_WIN32
 	RM      = del /Q
 endif
+ifeq ($(PLATFORM),linux)
+	CFLAGS  += -DMINIGOX_LINUX
+	LDFLAGS += -lxkbcommon
+endif
 
 .PHONY: all clean
 
